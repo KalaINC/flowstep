@@ -1,0 +1,324 @@
+Instruction: You are a Technical Writer for L2 IT Support. Your task is to translate complex code into a flow chart for support staff. Ignore implementation details (e.g., os.path.getmtime) and focus entirely on the process flow.
+
+Rules for the target platform (FlowStep):
+No Inventions: Use only the fields from the CustomNodeData interface: label and details (array of strings). Fields like category do not exist!
+
+Support Language: The details must explain what is happening, not what the code is called. (Instead of while True, write "Continuous monitoring in progress").
+
+Layout Hierarchy:
+Main Path (Success): Top to bottom (increase y by 200 per step).
+Error Paths: Offset horizontally to the right (x + 400).
+
+Handles:
+Standard Flow: bottom-source to top-target.
+Errors/Exceptions: right-source to left-target.
+
+Example of Support Optimization:
+Bad (for developers): label: "check_for_new_command()", details: ["if not raw: return", "last_path = exec_json"]
+Good (for support): label: "Check for new commands", details: ["Verify if file content is valid", "Compare with last executed command"]
+
+Output Format: Write your output so that the entire constants.tsx file can be replaced, starting from the import statements.
+
+Reference file for orientation:
+
+import { WorkflowData } from './types';
+
+export const INITIAL_WORKFLOW: WorkflowData = {
+  "version": 1,
+  "meta": {
+    "name": "Autonomous Trading Bot L2 Support Flow",
+    "format": "reactflow",
+    "notes": "Last updated: 22.12.2025, 22:25:09"
+  },
+  "nodes": [
+    {
+      "id": "monitor",
+      "type": "custom",
+      "position": {
+        "x": 405,
+        "y": 0
+      },
+      "data": {
+        "label": "File Monitoring (Loop)",
+        "details": [
+          "Check 'final_decision.json' for changes",
+          "Load API keys from .env"
+        ]
+      }
+    },
+    {
+      "id": "err_monitor",
+      "type": "custom",
+      "position": {
+        "x": 975,
+        "y": 0
+      },
+      "data": {
+        "label": "Monitoring Error",
+        "details": [
+          "File not readable or missing",
+          "System waiting for availability"
+        ]
+      }
+    },
+    {
+      "id": "parse_json",
+      "type": "custom",
+      "position": {
+        "x": 405,
+        "y": 195
+      },
+      "data": {
+        "label": "Interpret Command",
+        "details": [
+          "Extract JSON blocks from text",
+          "Data structure validation"
+        ]
+      }
+    },
+    {
+      "id": "err_parse",
+      "type": "custom",
+      "position": {
+        "x": 975,
+        "y": 200
+      },
+      "data": {
+        "label": "Invalid Data",
+        "details": [
+          "No valid JSON block found",
+          "Loop will be restarted"
+        ]
+      }
+    },
+    {
+      "id": "check_duplicate",
+      "type": "custom",
+      "position": {
+        "x": 405,
+        "y": 405
+      },
+      "data": {
+        "label": "Duplicate Check",
+        "details": [
+          "Cross-check with 'last_executes.json'",
+          "Check if command was already executed"
+        ]
+      }
+    },
+    {
+      "id": "prepare_api",
+      "type": "custom",
+      "position": {
+        "x": 405,
+        "y": 660
+      },
+      "data": {
+        "label": "API Signing",
+        "details": [
+          "Create HMAC-SHA256 signature",
+          "Generate timestamp & auth headers"
+        ]
+      }
+    },
+    {
+      "id": "execute_trade",
+      "type": "custom",
+      "position": {
+        "x": 405,
+        "y": 795
+      },
+      "data": {
+        "label": "Order Submission",
+        "details": [
+          "Send request to ByBit (POST/GET/DELETE)",
+          "Log server response"
+        ]
+      }
+    },
+    {
+      "id": "err_execute",
+      "type": "custom",
+      "position": {
+        "x": 975,
+        "y": 795
+      },
+      "data": {
+        "label": "API Error",
+        "details": [
+          "Network error or invalid parameters",
+          "Signature/Key invalid (Check .env)"
+        ]
+      }
+    },
+    {
+      "id": "duplicate_recognized",
+      "type": "custom",
+      "position": {
+        "x": 975,
+        "y": 407
+      },
+      "data": {
+        "label": "Duplicate detected",
+        "details": [
+          "Comparison shows a command that has already been executed."
+        ]
+      }
+    },
+    {
+      "id": "no_duplicate",
+      "type": "custom",
+      "position": {
+        "x": 405,
+        "y": 540
+      },
+      "data": {
+        "label": "New command detected",
+        "details": [
+          "Comparison shows a new command"
+        ]
+      }
+    },
+    {
+      "id": "start_des_moduls",
+      "type": "custom",
+      "position": {
+        "x": 405,
+        "y": -135
+      },
+      "data": {
+        "label": "Initial module start",
+        "details": []
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_mon_err",
+      "source": "monitor",
+      "target": "err_monitor",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "smoothstep",
+      "label": "Back to file monitoring"
+    },
+    {
+      "id": "e_mon_parse",
+      "source": "monitor",
+      "target": "parse_json",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "top-target",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e_parse_err",
+      "source": "parse_json",
+      "target": "err_parse",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "smoothstep",
+      "label": "Back to file monitoring"
+    },
+    {
+      "id": "e_parse_dup",
+      "source": "parse_json",
+      "target": "check_duplicate",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "top-target",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e_prep_exec",
+      "source": "prepare_api",
+      "target": "execute_trade",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "top-target",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e_exec_err",
+      "source": "execute_trade",
+      "target": "err_execute",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "smoothstep",
+      "label": "3x retry, otherwise back to file monitoring"
+    },
+    {
+      "id": "e_check_dupl",
+      "source": "check_duplicate",
+      "target": "no_duplicate",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "top-target",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e_no_dupl",
+      "source": "no_duplicate",
+      "target": "prepare_api",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "top-target",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e_dupl_regocnized",
+      "source": "check_duplicate",
+      "target": "duplicate_recognized",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "step",
+      "label": "Back to file monitoring"
+    },
+    {
+      "id": "e_err_monitor_back_to_loop",
+      "source": "err_monitor",
+      "target": "monitor",
+      "sourceHandle": "right-source",
+      "targetHandle": "top-target",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e_err_parse_back_to_loop",
+      "source": "err_parse",
+      "target": "monitor",
+      "sourceHandle": "right-source",
+      "targetHandle": "top-target",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e_duplicate_rec_back_to_loop",
+      "source": "duplicate_recognized",
+      "target": "monitor",
+      "sourceHandle": "right-source",
+      "targetHandle": "top-target",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e_err_execute_back_to_loop",
+      "source": "err_execute",
+      "target": "monitor",
+      "sourceHandle": "right-source",
+      "targetHandle": "top-target",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e_start_of_loop",
+      "source": "start_des_moduls",
+      "target": "monitor",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "top-target",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e_sucess_back_to_loop",
+      "source": "execute_trade",
+      "target": "monitor",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "left-target",
+      "type": "smoothstep"
+    }
+  ]
+};
+
+Code to be analyzed: 
+<Your code here / Code of all interacting modules if necessary Code A -> Code B -> Code C, etc.>

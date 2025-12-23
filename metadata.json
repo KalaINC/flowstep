@@ -1,0 +1,5 @@
+{
+  "name": "FlowStep - Interactive Workflow Builder",
+  "description": "A powerful ReactFlow-based tool for creating and visualizing sequential workflows, featuring an interactive sequence mode to reveal process steps one by one.",
+  "requestFramePermissions": []
+}
