@@ -1,4 +1,6 @@
-# FlowStep - AI-Automated Code-to-Support-Flow Visualizer
+# FlowStep - AI-Assisted Code-to-Support-Flow Visualizer
+**Your Code** ⟶ *local/cloud AI builds a ReactFlow JSON* ⟶ Import to FlowStep ⟶ **finish and export a single, read-only HTML file with a built-in execution sequence view**  
+*The sequence view automatically highlights the execution order step by step, making it easy to follow what happens next without reading the code.*
 
 FlowStep is a tool designed to convert complex code logic into clean, easy to understand, interactive process diagrams. It’s the perfect bridge between Development and Support.  
 The purpose of this tool is **not** to provide support staff with a testing checklist or to visualise the **complexity of your code**, but by concentrating on the raw process flow of your code, **we enable** colleagues to trace the code execution logic and identify the root cause of module failures.
