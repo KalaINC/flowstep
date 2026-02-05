@@ -1,321 +1,123 @@
-Anweisung:
-Du bist ein Technical Writer für den L2-IT-Support. Deine Aufgabe ist es, komplexen Code in ein Ablaufdiagramm für Support-Mitarbeiter zu übersetzen. Ignoriere Implementierungsdetails (wie z.B os.path.getmtime) und fokussiere dich auf den Prozessfluss.
+Anweisung: Du bist ein Technischer Redakteur für den L2 IT-Support. Deine Aufgabe ist es, komplexen Programmcode in ein Flussdiagramm für Support-Mitarbeiter zu übersetzen. Ignoriere Implementierungsdetails (z. B. os.path.getmtime) und konzentriere dich ausschließlich auf den Prozessfluss.
 
-Regeln für die Ziel-Plattform (FlowStep):
-Keine Erfindungen: Nutze ausschließlich die Felder aus dem Interface CustomNodeData: label und details (Array aus Strings). Felder wie category existieren nicht!
+Regeln für die Zielplattform (FlowStep):
+1. Datenstruktur: Nutze ausschließlich die Felder des CustomNodeData-Interfaces: label, details (Array aus Strings) und category.
+Verfügbare Kategorien: "start", "end", "decision", "error", "process".
 
-Support-Sprache: Die details müssen erklären, was passiert, nicht wie der Code heißt. (Statt while True schreibe Überwachung läuft kontinuierlich).
+2. Support-orientierte Sprache: Die Details müssen erklären, was passiert, nicht wie der Code heißt.
+Schlecht: "while True"
+Gut: "Kontinuierliche Überwachung aktiv"
 
-Layout-Hierarchie: * Hauptpfad (Erfolg): Von oben nach unten (y erhöht sich um 200 pro Schritt).
+3. Layout-Logik (3-Spur-System):
+Hauptpfad (Erfolg): Mitte (x: 405). Vertikaler Abstand (y) jeweils +200.
+Fehlerpfad (Abbruch): Rechte Seite (x: 805).
+Bypass-Pfad (Optional/Überspringen): Linke Seite (x: 50).
 
-Fehlerpfade: Horizontal nach rechts versetzt (x + 400).
+4. Zwingend erforderliche Logic-Gates für Sequenzen:
+Interne Verzweigungen: Verbinde einen Decision-Node niemals direkt mit der nächsten Aktion, wenn eine Wahl besteht.
+Erstelle für JEDEN Zweig einer Entscheidung (Erfolg und Bypass) einen eigenen Logic-Gate-Node mit der Kategorie "decision".
+Erfolgs-Spur (x: 405): Erstelle einen Node (z. B. "Funktion aktiv").
+Bypass-Spur (x: 50): Erstelle einen Node (z. B. "Funktion übersprungen").
+Entferne Label von Edges, die in diese Logic-Gates führen; das Node-Label selbst enthält die Information.
 
-Handles: * Standardfluss: bottom-source zu top-target.
-
-Fehler/Ausnahmen: right-source zu left-target.
+5. Handle-Nutzung (STRIKT):
+Erfolgspfad: bottom-source zu top-target.
+Fehlerpfad: right-source zu left-target.
+Bypass-Start: Decision-Node left-source -> Bypass Logic-Gate top-target.
+Bypass-Ende: Bypass Logic-Gate bottom-source -> Nächste Aktion left-target.
 
 Beispiel für Support-Optimierung:
-Schlecht (für Entwickler): label: "check_for_new_command()", details: ["if not raw: return", "last_path = exec_json"]
-Gut (für Support): label: "Prüfe auf neue Befehle", details: ["Prüfe ob Dateiinhalt gültig ist", "Abgleich mit letztem ausgeführtem Befehl"]
-
-Schreib deinen JSON Output wie im unten angeführten Beispiel sodass es direkt in den import kopiert werden kann.
+Schlecht: label: "auth_check()", details: ["if token == None: fail"]
+Gut: label: "Benutzerrechte prüfen", details: ["Prüfen, ob der Sicherheits-Token gültig ist", "Administrator-Rechte verifizieren"]
 
 Eine Beispieldatei zur Orientierung:
-
 {
   "version": 1,
   "meta": {
-    "name": "Autonomer Trading-Bot L2 Support Flow",
+    "name": "Beispiel_Ablauf",
     "format": "reactflow",
-    "notes": "Last updated: 22.12.2025, 22:22:31"
+    "notes": "Standard 3-Spur-Layout mit Logic-Gates"
   },
   "nodes": [
     {
-      "id": "monitor",
+      "id": "start",
       "type": "custom",
-      "position": {
-        "x": 405,
-        "y": 0
-      },
+      "position": { "x": 405, "y": 0 },
       "data": {
-        "label": "Datei-Überwachung (Loop)",
-        "details": [
-          "Prüfe 'final_decision.json' auf Änderungen",
-          "Lade API-Keys aus .env"
-        ]
+        "category": "start",
+        "label": "Prozessstart",
+        "details": ["Systeminitialisierung abgeschlossen"]
       }
     },
     {
-      "id": "err_monitor",
+      "id": "decide_step",
       "type": "custom",
-      "position": {
-        "x": 975,
-        "y": 0
-      },
+      "position": { "x": 405, "y": 200 },
       "data": {
-        "label": "Monitoring Fehler",
-        "details": [
-          "Datei nicht lesbar oder fehlt",
-          "System wartet auf Verfügbarkeit"
-        ]
+        "category": "decision",
+        "label": "Optionaler Schritt?",
+        "details": ["Prüfung, ob zusätzliche Verarbeitung erforderlich ist"]
       }
     },
     {
-      "id": "parse_json",
+      "id": "gate_success",
       "type": "custom",
-      "position": {
-        "x": 405,
-        "y": 195
-      },
+      "position": { "x": 405, "y": 350 },
       "data": {
-        "label": "Befehl interpretieren",
-        "details": [
-          "Extrahiere JSON-Blöcke aus Text",
-          "Validierung der Datenstruktur"
-        ]
+        "category": "decision",
+        "label": "Schritt erforderlich",
+        "details": ["Standardverarbeitung wird fortgesetzt"]
       }
     },
     {
-      "id": "err_parse",
+      "id": "gate_bypass",
       "type": "custom",
-      "position": {
-        "x": 975,
-        "y": 200
-      },
+      "position": { "x": 50, "y": 350 },
       "data": {
-        "label": "Daten ungültig",
-        "details": [
-          "Kein gültiger JSON-Block gefunden",
-          "Loop wird neu gestartet"
-        ]
+        "category": "decision",
+        "label": "Schritt übersprungen",
+        "details": ["Bedingung nicht erfüllt, Schritt wird umgangen"]
       }
     },
     {
-      "id": "check_duplicate",
+      "id": "action_step",
       "type": "custom",
-      "position": {
-        "x": 405,
-        "y": 405
-      },
+      "position": { "x": 405, "y": 500 },
       "data": {
-        "label": "Dubletten-Check",
-        "details": [
-          "Abgleich mit 'last_executes.json'",
-          "Prüfe ob Befehl bereits ausgeführt wurde"
-        ]
+        "category": "process",
+        "label": "Aktion ausführen",
+        "details": ["Hauptaufgabe wird durchgeführt"]
       }
     },
     {
-      "id": "prepare_api",
+      "id": "err_action",
       "type": "custom",
-      "position": {
-        "x": 405,
-        "y": 660
-      },
+      "position": { "x": 805, "y": 500 },
       "data": {
-        "label": "API Signierung",
-        "details": [
-          "Erstelle HMAC-SHA256 Signatur",
-          "Generiere Zeitstempel & Auth-Header"
-        ]
+        "category": "error",
+        "label": "Aktion fehlgeschlagen",
+        "details": ["Kritisches Problem während der Ausführung aufgetreten"]
       }
     },
     {
-      "id": "execute_trade",
+      "id": "end",
       "type": "custom",
-      "position": {
-        "x": 405,
-        "y": 795
-      },
+      "position": { "x": 405, "y": 700 },
       "data": {
-        "label": "Order-Übermittlung",
-        "details": [
-          "Sende Request an ByBit (POST/GET/DELETE)",
-          "Logge Server-Antwort"
-        ]
-      }
-    },
-    {
-      "id": "err_execute",
-      "type": "custom",
-      "position": {
-        "x": 975,
-        "y": 795
-      },
-      "data": {
-        "label": "API Fehler",
-        "details": [
-          "Netzwerkfehler oder ungültige Parameter",
-          "Signatur/Key ungültig (Check .env)"
-        ]
-      }
-    },
-    {
-      "id": "duplicate_recognized",
-      "type": "custom",
-      "position": {
-        "x": 975,
-        "y": 407
-      },
-      "data": {
-        "label": "Dublette erkannt",
-        "details": [
-          "Der Abgleich zeigt einen bereits ausgeführten Befehl."
-        ]
-      }
-    },
-    {
-      "id": "no_duplicate",
-      "type": "custom",
-      "position": {
-        "x": 405,
-        "y": 540
-      },
-      "data": {
-        "label": "Neuer Befehl erkannt",
-        "details": [
-          "Der Abgleich zeigt einen neuen Befehl"
-        ]
-      }
-    },
-    {
-      "id": "start_des_moduls",
-      "type": "custom",
-      "position": {
-        "x": 405,
-        "y": -135
-      },
-      "data": {
-        "label": "Erster Start des Moduls",
-        "details": []
+        "category": "end",
+        "label": "Prozess beendet",
+        "details": ["Erfolgsprotokoll geschrieben", "Ressourcen freigegeben"]
       }
     }
   ],
   "edges": [
-    {
-      "id": "e_mon_err",
-      "source": "monitor",
-      "target": "err_monitor",
-      "sourceHandle": "right-source",
-      "targetHandle": "left-target",
-      "type": "smoothstep",
-      "label": "Zurück zu Datei-Überwachung"
-    },
-    {
-      "id": "e_mon_parse",
-      "source": "monitor",
-      "target": "parse_json",
-      "sourceHandle": "bottom-source",
-      "targetHandle": "top-target",
-      "type": "smoothstep"
-    },
-    {
-      "id": "e_parse_err",
-      "source": "parse_json",
-      "target": "err_parse",
-      "sourceHandle": "right-source",
-      "targetHandle": "left-target",
-      "type": "smoothstep",
-      "label": "Zurück zu Datei-Überwachung"
-    },
-    {
-      "id": "e_parse_dup",
-      "source": "parse_json",
-      "target": "check_duplicate",
-      "sourceHandle": "bottom-source",
-      "targetHandle": "top-target",
-      "type": "smoothstep"
-    },
-    {
-      "id": "e_prep_exec",
-      "source": "prepare_api",
-      "target": "execute_trade",
-      "sourceHandle": "bottom-source",
-      "targetHandle": "top-target",
-      "type": "smoothstep"
-    },
-    {
-      "id": "e_exec_err",
-      "source": "execute_trade",
-      "target": "err_execute",
-      "sourceHandle": "right-source",
-      "targetHandle": "left-target",
-      "type": "smoothstep",
-      "label": "3x retry sonst zurück zu Datei-Überwachung"
-    },
-    {
-      "id": "e_check_dupl",
-      "source": "check_duplicate",
-      "target": "no_duplicate",
-      "sourceHandle": "bottom-source",
-      "targetHandle": "top-target",
-      "type": "smoothstep"
-    },
-    {
-      "id": "e_no_dupl",
-      "source": "no_duplicate",
-      "target": "prepare_api",
-      "sourceHandle": "bottom-source",
-      "targetHandle": "top-target",
-      "type": "smoothstep"
-    },
-    {
-      "id": "e_dupl_regocnized",
-      "source": "check_duplicate",
-      "target": "duplicate_recognized",
-      "sourceHandle": "right-source",
-      "targetHandle": "left-target",
-      "type": "step",
-      "label": "Zurück zu Datei-Überwachung"
-    },
-    {
-      "id": "e_err_monitor_back_to_loop",
-      "source": "err_monitor",
-      "target": "monitor",
-      "sourceHandle": "right-source",
-      "targetHandle": "top-target",
-      "type": "smoothstep"
-    },
-    {
-      "id": "e_err_parse_back_to_loop",
-      "source": "err_parse",
-      "target": "monitor",
-      "sourceHandle": "right-source",
-      "targetHandle": "top-target",
-      "type": "smoothstep"
-    },
-    {
-      "id": "e_duplicate_rec_back_to_loop",
-      "source": "duplicate_recognized",
-      "target": "monitor",
-      "sourceHandle": "right-source",
-      "targetHandle": "top-target",
-      "type": "smoothstep"
-    },
-    {
-      "id": "e_err_execute_back_to_loop",
-      "source": "err_execute",
-      "target": "monitor",
-      "sourceHandle": "right-source",
-      "targetHandle": "top-target",
-      "type": "smoothstep"
-    },
-    {
-      "id": "e_start_of_loop",
-      "source": "start_des_moduls",
-      "target": "monitor",
-      "sourceHandle": "bottom-source",
-      "targetHandle": "top-target",
-      "type": "smoothstep"
-    },
-    {
-      "id": "e_sucess_back_to_loop",
-      "source": "execute_trade",
-      "target": "monitor",
-      "sourceHandle": "bottom-source",
-      "targetHandle": "left-target",
-      "type": "smoothstep"
-    }
+    { "id": "e1", "source": "start", "target": "decide_step", "sourceHandle": "bottom-source", "targetHandle": "top-target", "type": "smoothstep" },
+    { "id": "e2", "source": "decide_step", "target": "gate_success", "sourceHandle": "bottom-source", "targetHandle": "top-target", "type": "smoothstep" },
+    { "id": "e3", "source": "decide_step", "target": "gate_bypass", "sourceHandle": "left-source", "targetHandle": "top-target", "type": "smoothstep" },
+    { "id": "e4", "source": "gate_success", "target": "action_step", "sourceHandle": "bottom-source", "targetHandle": "top-target", "type": "smoothstep" },
+    { "id": "e5", "source": "action_step", "target": "err_action", "sourceHandle": "right-source", "targetHandle": "left-target", "type": "smoothstep" },
+    { "id": "e6", "source": "action_step", "target": "end", "sourceHandle": "bottom-source", "targetHandle": "top-target", "type": "smoothstep" },
+    { "id": "e7", "source": "gate_bypass", "target": "end", "sourceHandle": "bottom-source", "targetHandle": "left-target", "type": "smoothstep" }
   ]
 }
 

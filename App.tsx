@@ -123,13 +123,52 @@ const buildExportHtml = (data: any, themeColor: string) => {
       const THEME_COLOR = ${safeThemeColor};
       const GRID_STEP = 15;
 
+      const CATEGORY_CONFIG = {
+        start: {
+          color: '#047857',
+          backgroundColor: '#ffffff',
+          borderColor: '#b91c1c00',
+          borderRadius: '9999px',
+          boxShadow: '0 2px 4px -1px rgba(16, 185, 129, 0.2)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+        },
+        end: {
+          color: '#334155',
+          backgroundColor: '#f8fafc',
+          borderColor: '#e2e8f0',
+          borderRadius: '9999px',
+          boxShadow: '0 2px 4px -1px rgba(0, 0, 0, 0.05)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+        },
+        decision: {
+          color: '#0369a1',
+          backgroundColor: '#ffffff',
+          borderColor: '#bae6fd',
+          borderStyle: 'dashed',
+        },
+        error: {
+          color: '#b91c1c',
+          backgroundColor: '#ffffff',
+          borderColor: '#fecaca',
+        },
+        process: {
+          color: '#475569',
+          backgroundColor: '#ffffff',
+          borderColor: '#f1f5f9',
+        },
+      };
+
       const CustomNode = ({ data, selected }) => {
         const isHighlighted = data.isHighlighted;
         const isVisible = data.isVisible !== false;
 
         if (!isVisible) return React.createElement('div', { className: 'opacity-0 pointer-events-none' });
 
-        const activeColor = 'var(--accent-color, #6366f1)';
+        const category = data.category || 'process';
+        const config = CATEGORY_CONFIG[category] || CATEGORY_CONFIG.process;
+        const activeColor = config.color;
         const handleClass = 'w-3 h-3 border-2 transition-colors duration-200';
 
         const DualHandle = ({ pos, idPrefix }) => (
@@ -168,14 +207,18 @@ const buildExportHtml = (data: any, themeColor: string) => {
           )
         );
 
-        const baseClass = 'group relative px-4 py-3 rounded-xl border-2 transition-all duration-300 shadow-lg w-64';
-        const stateClass = (isHighlighted ? 'bg-white ring-4' : 'bg-white border-slate-200') + (selected ? ' ring-2' : '');
-
         return (
           React.createElement('div', {
-            className: baseClass + ' ' + stateClass,
+            className: 'group relative px-4 py-3 transition-all duration-300 w-64' +
+              (isHighlighted ? ' ring-4' : '') +
+              (selected ? ' ring-2' : ''),
             style: {
-              borderColor: isHighlighted ? activeColor : (selected ? activeColor : undefined),
+              backgroundColor: config.backgroundColor,
+              borderColor: isHighlighted ? activeColor : (selected ? activeColor : config.borderColor),
+              borderRadius: config.borderRadius || '0.75rem',
+              borderStyle: config.borderStyle || 'solid',
+              borderWidth: config.borderWidth || '2px',
+              boxShadow: config.boxShadow,
               '--tw-ring-color': isHighlighted ? activeColor + '33' : activeColor + '1a'
             }
           },
@@ -183,14 +226,18 @@ const buildExportHtml = (data: any, themeColor: string) => {
             React.createElement(DualHandle, { pos: Position.Left, idPrefix: 'left' }),
             React.createElement(DualHandle, { pos: Position.Right, idPrefix: 'right' }),
             React.createElement(DualHandle, { pos: Position.Bottom, idPrefix: 'bottom' }),
-            React.createElement('div', { className: 'flex flex-col relative' },
+            React.createElement('div', { className: 'flex flex-col relative text-center' },
               React.createElement('span', {
                 className: 'text-sm font-bold mb-1 break-words flex-grow',
-                style: { color: isHighlighted ? activeColor : '#1e293b' }
+                style: {
+                  color: isHighlighted ? activeColor : (category === 'process' ? '#1e293b' : activeColor),
+                  textTransform: config.textTransform || 'none',
+                  letterSpacing: config.letterSpacing || 'normal'
+                }
               }, data.label),
               data.details && data.details.length > 0 && (
                 React.createElement('div', { className: 'mt-2 pt-2 border-t border-slate-100 min-h-[10px]' },
-                  React.createElement('ul', { className: 'list-disc pl-4 space-y-1' },
+                  React.createElement('ul', { className: 'list-disc pl-4 space-y-1 text-left' },
                     data.details.map((detail, idx) => (
                       React.createElement('li', {
                         key: idx,
@@ -288,8 +335,8 @@ const buildExportHtml = (data: any, themeColor: string) => {
               ...edge,
               hidden: !isVisible,
               animated: mode === 'SEQUENCE' && isVisible,
-              markerEnd: { type: MarkerType.ArrowClosed, color: isVisible ? THEME_COLOR : '#cbd5e1' },
-              style: { stroke: isVisible ? THEME_COLOR : '#cbd5e1', strokeWidth: 2 }
+              markerEnd: { type: MarkerType.ArrowClosed, color: isVisible ? '#64748b' : '#cbd5e1' },
+              style: { stroke: isVisible ? '#64748b' : '#cbd5e1', strokeWidth: 2 }
             };
           });
         }, [edges, mode, visibleNodeIds]);
@@ -450,6 +497,7 @@ const buildFlowData = (nodes: Node<CustomNodeData>[], edges: Edge[], name: strin
       data: {
         label: data?.label ?? '',
         details: Array.isArray(data?.details) ? data.details : [],
+        ...(data?.category ? { category: data.category } : {}),
       },
     })),
     edges: edges.map(({ id, source, target, sourceHandle, targetHandle, type, label }) => ({
@@ -487,10 +535,10 @@ const isValidFlowData = (data: any): data is WorkflowData => {
 const normalizeFlowData = (data: WorkflowData) => {
   const meta = data.meta
     ? {
-        name: data.meta.name || 'Untitled',
-        format: data.meta.format || 'reactflow',
-        notes: data.meta.notes || '',
-      }
+      name: data.meta.name || 'Untitled',
+      format: data.meta.format || 'reactflow',
+      notes: data.meta.notes || '',
+    }
     : { name: 'Untitled', format: 'reactflow', notes: '' };
 
   const nodes: Node<CustomNodeData>[] = data.nodes.map((n, idx) => ({
@@ -500,6 +548,7 @@ const normalizeFlowData = (data: WorkflowData) => {
     data: {
       label: n.data?.label ?? '',
       details: Array.isArray(n.data?.details) ? n.data.details : [],
+      ...(n.data?.category ? { category: n.data.category } : {}),
     },
   }));
 
@@ -1108,9 +1157,9 @@ const AppContent = () => {
       return {
         ...node,
         draggable: mode === AppMode.EDIT,
-        data: { 
-          ...node.data, 
-          isVisible, 
+        data: {
+          ...node.data,
+          isVisible,
           isHighlighted,
         },
       };
@@ -1127,15 +1176,15 @@ const AppContent = () => {
         ...edge,
         hidden: !isVisible,
         animated: mode === AppMode.SEQUENCE && isVisible,
-        markerEnd: { type: MarkerType.ArrowClosed, color: isVisible ? themeColor : '#cbd5e1' },
-        style: { stroke: isVisible ? themeColor : '#cbd5e1', strokeWidth: 2 },
+        markerEnd: { type: MarkerType.ArrowClosed, color: isVisible ? '#64748b' : '#cbd5e1' },
+        style: { stroke: isVisible ? '#64748b' : '#cbd5e1', strokeWidth: 2 },
       };
     });
   }, [edges, mode, visibleNodeIds, themeColor]);
 
   const onConnect = useCallback(
     (params: Connection) => {
-      const isHorizontal = 
+      const isHorizontal =
         (params.sourceHandle?.includes('left') || params.sourceHandle?.includes('right')) &&
         (params.targetHandle?.includes('left') || params.targetHandle?.includes('right'));
 
@@ -1146,8 +1195,8 @@ const AppContent = () => {
           {
             ...params,
             type,
-            markerEnd: { type: MarkerType.ArrowClosed, color: themeColor },
-            style: { stroke: themeColor, strokeWidth: 2 }
+            markerEnd: { type: MarkerType.ArrowClosed, color: '#64748b' },
+            style: { stroke: '#64748b', strokeWidth: 2 }
           },
           eds
         )
@@ -1218,8 +1267,8 @@ const AppContent = () => {
   }, [selectedNode?.id]); // Die [selectedNode?.id] ist hier der entscheidende Trigger!
 
   return (
-    <div 
-      className="w-full h-full bg-slate-50 relative overflow-hidden" 
+    <div
+      className="w-full h-full bg-slate-50 relative overflow-hidden"
       style={{ '--accent-color': themeColor } as any}
     >
       <ControlPanel
@@ -1239,9 +1288,8 @@ const AppContent = () => {
         workspacePanel={
           <div className="pointer-events-auto">
             <div
-              className={`bg-white/90 backdrop-blur-md shadow-xl border border-slate-200 rounded-2xl transition-all duration-200 w-[280px] flex flex-col ${
-                isFlowSidebarOpen ? 'max-h-[70vh] overflow-visible' : 'h-12 overflow-hidden'
-              }`}
+              className={`bg-white/90 backdrop-blur-md shadow-xl border border-slate-200 rounded-2xl transition-all duration-200 w-[280px] flex flex-col ${isFlowSidebarOpen ? 'max-h-[70vh] overflow-visible' : 'h-12 overflow-hidden'
+                }`}
             >
               <div className="flex items-center justify-between p-2">
                 <button
@@ -1301,11 +1349,10 @@ const AppContent = () => {
                           flowFiles.map((flow) => (
                             <div
                               key={flow.fileName}
-                              className={`relative flex items-center justify-between gap-2 px-3 py-2 rounded-xl border transition ${
-                                selectedFlow?.fileName === flow.fileName
-                                  ? 'border-slate-200 bg-slate-50'
-                                  : 'border-transparent hover:bg-slate-50'
-                              }`}
+                              className={`relative flex items-center justify-between gap-2 px-3 py-2 rounded-xl border transition ${selectedFlow?.fileName === flow.fileName
+                                ? 'border-slate-200 bg-slate-50'
+                                : 'border-transparent hover:bg-slate-50'
+                                }`}
                             >
                               <button
                                 onClick={() => handleSelectFlow(flow)}
@@ -1323,14 +1370,14 @@ const AppContent = () => {
                                       prev?.flow.fileName === flow.fileName
                                         ? null
                                         : {
-                                            flow,
-                                            rect: {
-                                              top: rect.top,
-                                              left: rect.left,
-                                              right: rect.right,
-                                              bottom: rect.bottom,
-                                            },
-                                          }
+                                          flow,
+                                          rect: {
+                                            top: rect.top,
+                                            left: rect.left,
+                                            right: rect.right,
+                                            bottom: rect.bottom,
+                                          },
+                                        }
                                     );
                                   }}
                                   className="text-slate-500 hover:text-slate-800"
@@ -1447,8 +1494,8 @@ const AppContent = () => {
             <div className="space-y-4 animate-in fade-in slide-in-from-right-2 duration-200">
               <div className="space-y-1.5">
                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Label</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={selectedNode.data.label}
                   onChange={(e) => updateNodeLabel(selectedNode.id, e.target.value)}
                   className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all"
@@ -1470,7 +1517,7 @@ const AppContent = () => {
                 />
               </div>
 
-              <button 
+              <button
                 onClick={handleDelete}
                 className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl text-xs font-bold transition-all border border-red-100"
               >
@@ -1498,19 +1545,19 @@ const AppContent = () => {
               <div className="space-y-2">
                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Theme Accent Color</label>
                 <div className="flex gap-2 items-center">
-                  <div 
+                  <div
                     className="w-10 h-10 rounded-xl shadow-inner border border-slate-200 relative overflow-hidden"
                     style={{ backgroundColor: themeColor }}
                   >
-                    <input 
-                      type="color" 
+                    <input
+                      type="color"
                       value={themeColor}
                       onChange={(e) => setThemeColor(e.target.value)}
                       className="absolute inset-0 opacity-0 cursor-pointer"
                     />
                   </div>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={themeColor}
                     onChange={(e) => setThemeColor(e.target.value)}
                     className="flex-grow px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono focus:outline-none focus:ring-2 transition-all"
@@ -1519,7 +1566,7 @@ const AppContent = () => {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-2">
                   {['#6366f1', '#fe5100', '#10b981', '#f59e0b', '#ec4899', '#0ea5e9'].map(color => (
-                    <button 
+                    <button
                       key={color}
                       onClick={() => setThemeColor(color)}
                       className={`w-6 h-6 rounded-full border border-white shadow-sm ring-1 ring-slate-100 transition-transform hover:scale-110 active:scale-90 ${themeColor === color ? 'ring-2 ring-slate-400 scale-110' : ''}`}
@@ -1552,7 +1599,7 @@ const AppContent = () => {
 
       {mode === AppMode.SEQUENCE && (
         <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
-          <div 
+          <div
             className="bg-white/90 backdrop-blur px-6 py-3 rounded-full shadow-2xl border flex items-center gap-4 animate-bounce"
             style={{ borderColor: `${themeColor}40` }}
           >

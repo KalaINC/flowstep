@@ -3,43 +3,171 @@
   "meta": {
     "name": "example",
     "format": "reactflow",
-    "notes": "Last updated: 26.12.2025, 18:01:40"
+    "notes": "Last updated: 5.2.2026, 16:57:21"
   },
   "nodes": [
     {
-      "id": "node_1",
+      "id": "start",
       "type": "custom",
       "position": {
-        "x": 300,
-        "y": 240
+        "x": 405,
+        "y": 0
       },
       "data": {
-        "label": "Start of module",
-        "details": []
+        "label": "Process Start",
+        "details": [
+          "System initialization complete"
+        ],
+        "category": "start"
       }
     },
     {
-      "id": "node_2",
+      "id": "decide_step",
       "type": "custom",
       "position": {
-        "x": 300,
-        "y": 390
+        "x": 405,
+        "y": 200
       },
       "data": {
-        "label": "End of module",
+        "label": "Optional Step?",
         "details": [
-          "watching *.json for change"
-        ]
+          "Checking if additional processing is required"
+        ],
+        "category": "decision"
+      }
+    },
+    {
+      "id": "gate_success",
+      "type": "custom",
+      "position": {
+        "x": 405,
+        "y": 350
+      },
+      "data": {
+        "label": "Step Required",
+        "details": [
+          "Proceeding with standard action"
+        ],
+        "category": "decision"
+      }
+    },
+    {
+      "id": "gate_bypass",
+      "type": "custom",
+      "position": {
+        "x": 50,
+        "y": 350
+      },
+      "data": {
+        "label": "Step Skipped",
+        "details": [
+          "Condition not met, bypassing step"
+        ],
+        "category": "decision"
+      }
+    },
+    {
+      "id": "action_step",
+      "type": "custom",
+      "position": {
+        "x": 405,
+        "y": 500
+      },
+      "data": {
+        "label": "Execute Action",
+        "details": [
+          "Performing the main task"
+        ],
+        "category": "process"
+      }
+    },
+    {
+      "id": "err_action",
+      "type": "custom",
+      "position": {
+        "x": 805,
+        "y": 494
+      },
+      "data": {
+        "label": "Action Failed",
+        "details": [
+          "System encountered a critical issue during execution"
+        ],
+        "category": "error"
+      }
+    },
+    {
+      "id": "end",
+      "type": "custom",
+      "position": {
+        "x": 405,
+        "y": 700
+      },
+      "data": {
+        "label": "Process Finished",
+        "details": [
+          "Success logs written",
+          "Resources released"
+        ],
+        "category": "end"
       }
     }
   ],
   "edges": [
     {
-      "id": "e_edge1",
-      "source": "node_1",
-      "target": "node_2",
+      "id": "e1",
+      "source": "start",
+      "target": "decide_step",
       "sourceHandle": "bottom-source",
       "targetHandle": "top-target",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e2",
+      "source": "decide_step",
+      "target": "gate_success",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "top-target",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e3",
+      "source": "decide_step",
+      "target": "gate_bypass",
+      "sourceHandle": "left-source",
+      "targetHandle": "top-target",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e4",
+      "source": "gate_success",
+      "target": "action_step",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "top-target",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e5",
+      "source": "action_step",
+      "target": "err_action",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e6",
+      "source": "action_step",
+      "target": "end",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "top-target",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e7",
+      "source": "gate_bypass",
+      "target": "end",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "left-target",
       "type": "smoothstep"
     }
   ]

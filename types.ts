@@ -16,6 +16,7 @@ export interface CustomNodeData {
   details?: string[];
   isHighlighted?: boolean;
   isVisible?: boolean;
+  category?: 'start' | 'end' | 'decision' | 'error' | 'process';
 }
 
 export enum AppMode {
