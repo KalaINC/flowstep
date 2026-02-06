@@ -169,43 +169,55 @@ const buildExportHtml = (data: any, themeColor: string) => {
         const category = data.category || 'process';
         const config = CATEGORY_CONFIG[category] || CATEGORY_CONFIG.process;
         const activeColor = config.color;
-        const handleClass = 'w-3 h-3 border-2 transition-colors duration-200';
+        const handleClass = 'w-2.5 h-2.5 border-2 transition-colors duration-200';
+        const HANDLE_POSITIONS = ['25%', '50%', '75%'];
 
-        const DualHandle = ({ pos, idPrefix }) => (
-          React.createElement(React.Fragment, null,
-            React.createElement(Handle, {
-              id: idPrefix + '-target',
-              type: 'target',
-              position: pos,
-              className: handleClass + ' z-10',
-              style: {
-                visibility: 'visible',
-                backgroundColor: isHighlighted ? activeColor : '#cbd5e1',
-                borderColor: '#fff',
-                ...(pos === Position.Top || pos === Position.Bottom ? { left: '50%', transform: 'translateX(-50%)' } : { top: '50%', transform: 'translateY(-50%)' }),
-                ...(pos === Position.Top ? { top: '-7px' } : {}),
-                ...(pos === Position.Bottom ? { bottom: '-7px' } : {}),
-                ...(pos === Position.Left ? { left: '-7px' } : {}),
-                ...(pos === Position.Right ? { right: '-7px' } : {})
-              }
-            }),
-            React.createElement(Handle, {
-              id: idPrefix + '-source',
-              type: 'source',
-              position: pos,
-              className: handleClass + ' opacity-0 hover:opacity-100 z-20',
-              style: {
-                backgroundColor: isHighlighted ? activeColor : '#cbd5e1',
-                borderColor: '#fff',
-                ...(pos === Position.Top || pos === Position.Bottom ? { left: '50%', transform: 'translateX(-50%)' } : { top: '50%', transform: 'translateY(-50%)' }),
-                ...(pos === Position.Top ? { top: '-7px' } : {}),
-                ...(pos === Position.Bottom ? { bottom: '-7px' } : {}),
-                ...(pos === Position.Left ? { left: '-7px' } : {}),
-                ...(pos === Position.Right ? { right: '-7px' } : {})
-              }
+        const TripleHandle = ({ pos, idPrefix }) => {
+          const isVertical = pos === Position.Top || pos === Position.Bottom;
+          
+          return React.createElement(React.Fragment, null,
+            HANDLE_POSITIONS.map((offset, idx) => {
+              const positionStyle = isVertical
+                ? { left: offset, transform: 'translateX(-50%)' }
+                : { top: offset, transform: 'translateY(-50%)' };
+              
+              const edgeStyle = {
+                ...(pos === Position.Top ? { top: '-6px' } : {}),
+                ...(pos === Position.Bottom ? { bottom: '-6px' } : {}),
+                ...(pos === Position.Left ? { left: '-6px' } : {}),
+                ...(pos === Position.Right ? { right: '-6px' } : {})
+              };
+
+              return React.createElement(React.Fragment, { key: idPrefix + '-' + idx },
+                React.createElement(Handle, {
+                  id: idPrefix + '-' + (idx + 1) + '-target',
+                  type: 'target',
+                  position: pos,
+                  className: handleClass + ' z-10',
+                  style: {
+                    visibility: 'visible',
+                    backgroundColor: isHighlighted ? activeColor : '#cbd5e1',
+                    borderColor: '#fff',
+                    ...positionStyle,
+                    ...edgeStyle
+                  }
+                }),
+                React.createElement(Handle, {
+                  id: idPrefix + '-' + (idx + 1) + '-source',
+                  type: 'source',
+                  position: pos,
+                  className: handleClass + ' opacity-0 hover:opacity-100 z-20',
+                  style: {
+                    backgroundColor: isHighlighted ? activeColor : '#cbd5e1',
+                    borderColor: '#fff',
+                    ...positionStyle,
+                    ...edgeStyle
+                  }
+                })
+              );
             })
-          )
-        );
+          );
+        };
 
         return (
           React.createElement('div', {
@@ -222,10 +234,10 @@ const buildExportHtml = (data: any, themeColor: string) => {
               '--tw-ring-color': isHighlighted ? activeColor + '33' : activeColor + '1a'
             }
           },
-            React.createElement(DualHandle, { pos: Position.Top, idPrefix: 'top' }),
-            React.createElement(DualHandle, { pos: Position.Left, idPrefix: 'left' }),
-            React.createElement(DualHandle, { pos: Position.Right, idPrefix: 'right' }),
-            React.createElement(DualHandle, { pos: Position.Bottom, idPrefix: 'bottom' }),
+            React.createElement(TripleHandle, { pos: Position.Top, idPrefix: 'top' }),
+            React.createElement(TripleHandle, { pos: Position.Left, idPrefix: 'left' }),
+            React.createElement(TripleHandle, { pos: Position.Right, idPrefix: 'right' }),
+            React.createElement(TripleHandle, { pos: Position.Bottom, idPrefix: 'bottom' }),
             React.createElement('div', { className: 'flex flex-col relative text-center' },
               React.createElement('span', {
                 className: 'text-sm font-bold mb-1 break-words flex-grow',

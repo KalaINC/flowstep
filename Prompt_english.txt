@@ -1,28 +1,33 @@
 Instruction: You are a Technical Writer for L2 IT Support. Your task is to translate complex code into a flow chart for support staff. Ignore implementation details (e.g., os.path.getmtime) and focus entirely on the process flow.
 
 Rules for the target platform (FlowStep):
-Data Structure: Use the fields from the CustomNodeData interface: label, details (array of strings), and category.
-- Available Categories: "start", "end", "decision", "error", "process".
+- Data Structure: Use only fields from the CustomNodeData interface: label, details (array of strings), and category.
+- Categories: "start", "end", "decision", "error", "process".
 
-Support Language: The details must explain what is happening, not what the code is called. (Instead of "while True", write "Continuous monitoring in progress").
+Support Language: Details must explain the process, not the code names. (e.g., instead of "if status == 200", write "Verify server availability").
 
 Layout Logic (3-Lane-System):
-- Main Path (Success): Center (x: 405). Vertical increase (y) by 200.
-- Error Path (Failure): Right side (x: 805).
-- Bypass Path (Optional/Skip): Left side (x: 50).
+Main Path (Success): Center (x: 405). Vertical spacing (y) +200 per step.
+Error Path (Failure): Right side (x: 805).
+Bypass Path (Optional/Skip): Left side (x: 50).
+Error Sink:
+All error nodes leading to the same end node MUST lead to a central "Error handling" node (category: "error", position x: 1290) before finalizing.
+If errors have different end destinations, create a separate sink node for each destination to ensure traceability.
+Details: The details field MUST state: "This node is for visual path support only and has no technical function."
 
-Mandatory Logic-Gates for Sequences:
-- Internal Branching: Never connect a decision node directly to the next action if there is a choice.
-- For EVERY branch of a decision (Success and Bypass), create a dedicated Logic-Gate node using category: "decision".
-  * Success Lane (x: 405): Create a node (e.g., "Feature active").
-  * Bypass Lane (x: 50): Create a node (e.g., "Feature skipped").
-- Remove labels from edges leading into these Logic-Gates; the node label itself is the information.
+Triple-Handle Routing (Parallel Lanes):
+Each side has three slots: -1 (Top/Left), -2 (Center/Mid), -3 (Bottom/Right).
+- Success Path: Use 'bottom-source-2' to 'top-target-2'.
+- Error Path: Use 'right-source-2' to 'left-target-2' of the error node.
+- Bypass Start: Decision 'left-source-2' to Bypass Logic-Gate 'top-target-2'.
+- Bypass End: Bypass Logic-Gate 'bottom-source-2' to Next Action 'left-target-1'.
+- Multi-Input (Sink): When multiple lines enter the same node (e.g., Error Handling), distribute them across targets (-1, -2, -3) to prevent overlapping.
 
-Handle Usage (STRICT):
-- Success Path: 'bottom-source' to 'top-target'.
-- Error Path: 'right-source' to 'left-target'.
-- Bypass Start: Decision Node 'left-source' -> Bypass Logic-Gate 'top-target'.
-- Bypass End: Bypass Logic-Gate 'bottom-source' -> Next Action 'left-target'.
+Mandatory Logic-Gates:
+- Internal Branching: Never connect a decision directly to an action.
+- Create two intermediate nodes for every decision (category: "decision"):
+  * Success Lane (x: 405): "Feature active"
+  * Bypass Lane (x: 50): "Feature skipped"
 
 Example of Support Optimization:
 Bad: label: "auth_check()", details: ["if token == None: fail"]
@@ -32,177 +37,78 @@ Reference File:
 {
   "version": 1,
   "meta": {
-    "name": "example",
+    "name": "Reference Example",
     "format": "reactflow",
-    "notes": "Last updated: 5.2.2026, 16:51:05"
+    "notes": "3-lane layout: Center=Success, Left=Bypass, Right=Error. Uses Triple-Handles."
   },
   "nodes": [
     {
       "id": "start",
       "type": "custom",
-      "position": {
-        "x": 405,
-        "y": 0
-      },
-      "data": {
-        "label": "Process Start",
-        "details": [
-          "System initialization complete"
-        ],
-        "category": "start"
-      }
+      "position": { "x": 405, "y": 0 },
+      "data": { "category": "start", "label": "Module Start", "details": ["Initialization complete"] }
     },
     {
-      "id": "decide_step",
+      "id": "decision_1",
       "type": "custom",
-      "position": {
-        "x": 405,
-        "y": 200
-      },
-      "data": {
-        "label": "Optional Step?",
-        "details": [
-          "Checking if additional processing is required"
-        ],
-        "category": "decision"
-      }
+      "position": { "x": 405, "y": 200 },
+      "data": { "category": "decision", "label": "Optional Step?", "details": ["Check configuration flags"] }
     },
     {
-      "id": "gate_success",
+      "id": "gate_active",
       "type": "custom",
-      "position": {
-        "x": 405,
-        "y": 350
-      },
-      "data": {
-        "label": "Step Required",
-        "details": [
-          "Proceeding with standard action"
-        ],
-        "category": "decision"
-      }
+      "position": { "x": 405, "y": 350 },
+      "data": { "category": "decision", "label": "Step active", "details": [] }
     },
     {
-      "id": "gate_bypass",
+      "id": "gate_skip",
       "type": "custom",
-      "position": {
-        "x": 50,
-        "y": 350
-      },
-      "data": {
-        "label": "Step Skipped",
-        "details": [
-          "Condition not met, bypassing step"
-        ],
-        "category": "decision"
-      }
+      "position": { "x": 50, "y": 350 },
+      "data": { "category": "decision", "label": "Step skipped", "details": [] }
     },
     {
-      "id": "action_step",
+      "id": "action_1",
       "type": "custom",
-      "position": {
-        "x": 405,
-        "y": 500
-      },
-      "data": {
-        "label": "Execute Action",
-        "details": [
-          "Performing the main task"
-        ],
-        "category": "process"
-      }
+      "position": { "x": 405, "y": 500 },
+      "data": { "category": "process", "label": "Main Action 1", "details": ["Processing in progress"] }
     },
     {
-      "id": "err_action",
+      "id": "error_1",
       "type": "custom",
-      "position": {
-        "x": 805,
-        "y": 494
-      },
-      "data": {
-        "label": "Action Failed",
-        "details": [
-          "System encountered a critical issue during execution"
-        ],
-        "category": "error"
-      }
+      "position": { "x": 805, "y": 500 },
+      "data": { "category": "error", "label": "Error Action 1", "details": ["Logic error detected"] }
+    },
+    {
+      "id": "action_2",
+      "type": "custom",
+      "position": { "x": 405, "y": 700 },
+      "data": { "category": "process", "label": "Follow-up Action 2", "details": ["Next process step"] }
+    },
+    {
+      "id": "error_sink",
+      "type": "custom",
+      "position": { "x": 1290, "y": 600 },
+      "data": { "category": "error", "label": "Error Handling", "details": ["Central sink for termination"] }
     },
     {
       "id": "end",
       "type": "custom",
-      "position": {
-        "x": 405,
-        "y": 700
-      },
-      "data": {
-        "label": "Process Finished",
-        "details": [
-          "Success logs written",
-          "Resources released"
-        ],
-        "category": "end"
-      }
+      "position": { "x": 405, "y": 900 },
+      "data": { "category": "end", "label": "Module End", "details": ["Terminated"] }
     }
   ],
   "edges": [
-    {
-      "id": "e1",
-      "source": "start",
-      "target": "decide_step",
-      "sourceHandle": "bottom-source",
-      "targetHandle": "top-target",
-      "type": "smoothstep"
-    },
-    {
-      "id": "e2",
-      "source": "decide_step",
-      "target": "gate_success",
-      "sourceHandle": "bottom-source",
-      "targetHandle": "top-target",
-      "type": "smoothstep"
-    },
-    {
-      "id": "e3",
-      "source": "decide_step",
-      "target": "gate_bypass",
-      "sourceHandle": "left-source",
-      "targetHandle": "top-target",
-      "type": "smoothstep"
-    },
-    {
-      "id": "e4",
-      "source": "gate_success",
-      "target": "action_step",
-      "sourceHandle": "bottom-source",
-      "targetHandle": "top-target",
-      "type": "smoothstep"
-    },
-    {
-      "id": "e5",
-      "source": "action_step",
-      "target": "err_action",
-      "sourceHandle": "right-source",
-      "targetHandle": "left-target",
-      "type": "smoothstep"
-    },
-    {
-      "id": "e6",
-      "source": "action_step",
-      "target": "end",
-      "sourceHandle": "bottom-source",
-      "targetHandle": "top-target",
-      "type": "smoothstep"
-    },
-    {
-      "id": "e7",
-      "source": "gate_bypass",
-      "target": "end",
-      "sourceHandle": "bottom-source",
-      "targetHandle": "left-target",
-      "type": "smoothstep"
-    }
+    { "id": "e1", "source": "start", "target": "decision_1", "sourceHandle": "bottom-2-source", "targetHandle": "top-2-target", "type": "smoothstep" },
+    { "id": "e2", "source": "decision_1", "target": "gate_active", "sourceHandle": "bottom-2-source", "targetHandle": "top-2-target", "type": "smoothstep" },
+    { "id": "e3", "source": "decision_1", "target": "gate_skip", "sourceHandle": "left-2-source", "targetHandle": "top-2-target", "type": "smoothstep" },
+    { "id": "e4", "source": "gate_active", "target": "action_1", "sourceHandle": "bottom-2-source", "targetHandle": "top-2-target", "type": "smoothstep" },
+    { "id": "e5", "source": "action_1", "target": "error_1", "sourceHandle": "right-2-source", "targetHandle": "left-2-target", "type": "smoothstep" },
+    { "id": "e6", "source": "action_1", "target": "action_2", "sourceHandle": "bottom-2-source", "targetHandle": "top-2-target", "type": "smoothstep" },
+    { "id": "e7", "source": "gate_skip", "target": "action_2", "sourceHandle": "bottom-2-source", "targetHandle": "left-1-target", "type": "smoothstep" },
+    { "id": "e8", "source": "action_2", "target": "end", "sourceHandle": "bottom-2-source", "targetHandle": "top-2-target", "type": "smoothstep" },
+    { "id": "e9", "source": "error_1", "target": "error_sink", "sourceHandle": "right-2-source", "targetHandle": "top-1-target", "type": "smoothstep" },
+    { "id": "e10", "source": "error_sink", "target": "end", "sourceHandle": "bottom-2-source", "targetHandle": "right-2-target", "type": "smoothstep" }
   ]
 }
-
 Code to be analyzed: 
 <Your code here / Code of all interacting modules if necessary Code A -> Code B -> Code C, etc.>

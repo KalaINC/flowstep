@@ -3,7 +3,7 @@
   "meta": {
     "name": "example",
     "format": "reactflow",
-    "notes": "Last updated: 5.2.2026, 16:57:21"
+    "notes": "Last updated: 6.2.2026, 12:43:43"
   },
   "nodes": [
     {
@@ -14,100 +14,125 @@
         "y": 0
       },
       "data": {
-        "label": "Process Start",
+        "label": "Modulstart",
         "details": [
-          "System initialization complete"
+          "Initialisierung abgeschlossen"
         ],
         "category": "start"
       }
     },
     {
-      "id": "decide_step",
+      "id": "entscheidung_1",
       "type": "custom",
       "position": {
         "x": 405,
         "y": 200
       },
       "data": {
-        "label": "Optional Step?",
+        "label": "Optionale Prüfung?",
         "details": [
-          "Checking if additional processing is required"
+          "Prüfe Konfigurations-Flags"
         ],
         "category": "decision"
       }
     },
     {
-      "id": "gate_success",
+      "id": "gate_aktiv",
       "type": "custom",
       "position": {
         "x": 405,
         "y": 350
       },
       "data": {
-        "label": "Step Required",
-        "details": [
-          "Proceeding with standard action"
-        ],
+        "label": "Schritt aktiv",
+        "details": [],
         "category": "decision"
       }
     },
     {
-      "id": "gate_bypass",
+      "id": "gate_skip",
       "type": "custom",
       "position": {
         "x": 50,
         "y": 350
       },
       "data": {
-        "label": "Step Skipped",
-        "details": [
-          "Condition not met, bypassing step"
-        ],
+        "label": "Schritt übersprungen",
+        "details": [],
         "category": "decision"
       }
     },
     {
-      "id": "action_step",
+      "id": "aktion_1",
       "type": "custom",
       "position": {
         "x": 405,
         "y": 500
       },
       "data": {
-        "label": "Execute Action",
+        "label": "Hauptaktion 1",
         "details": [
-          "Performing the main task"
+          "Verarbeitung läuft"
         ],
         "category": "process"
       }
     },
     {
-      "id": "err_action",
+      "id": "fehler_1",
       "type": "custom",
       "position": {
         "x": 805,
-        "y": 494
+        "y": 500
       },
       "data": {
-        "label": "Action Failed",
+        "label": "Fehler Aktion 1",
         "details": [
-          "System encountered a critical issue during execution"
+          "Logik-Fehler erkannt"
         ],
         "category": "error"
       }
     },
     {
-      "id": "end",
+      "id": "aktion_2",
       "type": "custom",
       "position": {
         "x": 405,
         "y": 700
       },
       "data": {
-        "label": "Process Finished",
+        "label": "Folgeaktion 2",
         "details": [
-          "Success logs written",
-          "Resources released"
+          "Nächster Prozessschritt"
+        ],
+        "category": "process"
+      }
+    },
+    {
+      "id": "fehler_zentral",
+      "type": "custom",
+      "position": {
+        "x": 1290,
+        "y": 600
+      },
+      "data": {
+        "label": "Fehlerbehandlung",
+        "details": [
+          "Sammelpunkt für Abbruch"
+        ],
+        "category": "error"
+      }
+    },
+    {
+      "id": "ende",
+      "type": "custom",
+      "position": {
+        "x": 405,
+        "y": 900
+      },
+      "data": {
+        "label": "Modul Ende",
+        "details": [
+          "Beendet"
         ],
         "category": "end"
       }
@@ -117,57 +142,81 @@
     {
       "id": "e1",
       "source": "start",
-      "target": "decide_step",
-      "sourceHandle": "bottom-source",
-      "targetHandle": "top-target",
+      "target": "entscheidung_1",
+      "sourceHandle": "bottom-2-source",
+      "targetHandle": "top-2-target",
       "type": "smoothstep"
     },
     {
       "id": "e2",
-      "source": "decide_step",
-      "target": "gate_success",
-      "sourceHandle": "bottom-source",
-      "targetHandle": "top-target",
+      "source": "entscheidung_1",
+      "target": "gate_aktiv",
+      "sourceHandle": "bottom-2-source",
+      "targetHandle": "top-2-target",
       "type": "smoothstep"
     },
     {
       "id": "e3",
-      "source": "decide_step",
-      "target": "gate_bypass",
-      "sourceHandle": "left-source",
-      "targetHandle": "top-target",
+      "source": "entscheidung_1",
+      "target": "gate_skip",
+      "sourceHandle": "left-2-source",
+      "targetHandle": "top-2-target",
       "type": "smoothstep"
     },
     {
       "id": "e4",
-      "source": "gate_success",
-      "target": "action_step",
-      "sourceHandle": "bottom-source",
-      "targetHandle": "top-target",
+      "source": "gate_aktiv",
+      "target": "aktion_1",
+      "sourceHandle": "bottom-2-source",
+      "targetHandle": "top-2-target",
       "type": "smoothstep"
     },
     {
       "id": "e5",
-      "source": "action_step",
-      "target": "err_action",
-      "sourceHandle": "right-source",
-      "targetHandle": "left-target",
+      "source": "aktion_1",
+      "target": "fehler_1",
+      "sourceHandle": "right-2-source",
+      "targetHandle": "left-2-target",
       "type": "smoothstep"
     },
     {
       "id": "e6",
-      "source": "action_step",
-      "target": "end",
-      "sourceHandle": "bottom-source",
-      "targetHandle": "top-target",
+      "source": "aktion_1",
+      "target": "aktion_2",
+      "sourceHandle": "bottom-2-source",
+      "targetHandle": "top-2-target",
       "type": "smoothstep"
     },
     {
       "id": "e7",
-      "source": "gate_bypass",
-      "target": "end",
-      "sourceHandle": "bottom-source",
-      "targetHandle": "left-target",
+      "source": "gate_skip",
+      "target": "aktion_2",
+      "sourceHandle": "bottom-2-source",
+      "targetHandle": "left-1-target",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e8",
+      "source": "aktion_2",
+      "target": "ende",
+      "sourceHandle": "bottom-2-source",
+      "targetHandle": "top-2-target",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e9",
+      "source": "fehler_1",
+      "target": "fehler_zentral",
+      "sourceHandle": "right-2-source",
+      "targetHandle": "top-1-target",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e10",
+      "source": "fehler_zentral",
+      "target": "ende",
+      "sourceHandle": "bottom-2-source",
+      "targetHandle": "right-2-target",
       "type": "smoothstep"
     }
   ]

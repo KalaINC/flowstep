@@ -18,7 +18,7 @@ interface CategoryStyle {
 const CATEGORY_CONFIG: Record<string, CategoryStyle> = {
   start: {
     color: '#047857',           // Dunkleres Smaragd-Grün für Text (Lesbarkeit)
-    backgroundColor: '#ffffff', // Sehr sanftes Pastel-Grün (Hintergrund)
+    backgroundColor: '#ffffff',
     borderColor: '#b91c1c00',   // Wir nutzen hier eher einen sanften Schatten oder 
     borderRadius: '9999px',
     boxShadow: '0 2px 4px -1px rgba(16, 185, 129, 0.2)', // Grüner Schimmer
@@ -36,18 +36,18 @@ const CATEGORY_CONFIG: Record<string, CategoryStyle> = {
   },
   decision: {
     color: '#0369a1',           // Gedämpftes Blau
-    backgroundColor: '#ffffff', // Helles Pastel-Blau
+    backgroundColor: '#ffffff',
     borderColor: '#bae6fd',     // Sanfter blauer Rand
     borderStyle: 'dashed',      // Formsprache: Entscheidung ist "offen/flexibel"
   },
   error: {
     color: '#b91c1c',           // Gedämpftes Rot
-    backgroundColor: '#ffffff', // Helles Pastel-Rot/Rosa
+    backgroundColor: '#ffffff',
     borderColor: '#fecaca',     // Weicher roter Rand
   },
   process: {
     color: '#475569',           // Neutrales Slate-Grau
-    backgroundColor: '#ffffff', // Klassisch Weiß für den Standard
+    backgroundColor: '#ffffff',
     borderColor: '#f1f5f9',     // Sehr heller, dezenter Rand
   },
 };
@@ -63,43 +63,61 @@ const CustomNode = ({ id, data, selected }: NodeProps<CustomNodeData>) => {
 
   if (!isVisible) return <div className="opacity-0 pointer-events-none" />;
 
-  const handleClass = `w-3 h-3 border-2 transition-colors duration-200`;
+  const handleClass = `w-2.5 h-2.5 border-2 transition-colors duration-200`;
 
-  const DualHandle = ({ pos, idPrefix }: { pos: Position; idPrefix: string }) => (
-    <>
-      <Handle
-        id={`${idPrefix}-target`}
-        type="target"
-        position={pos}
-        className={`${handleClass} z-10`}
-        style={{
-          visibility: 'visible',
-          backgroundColor: isHighlighted ? activeColor : '#cbd5e1',
-          borderColor: '#fff',
-          ...(pos === Position.Top || pos === Position.Bottom ? { left: '50%', transform: 'translateX(-50%)' } : { top: '50%', transform: 'translateY(-50%)' }),
-          ...(pos === Position.Top ? { top: '-7px' } : {}),
-          ...(pos === Position.Bottom ? { bottom: '-7px' } : {}),
-          ...(pos === Position.Left ? { left: '-7px' } : {}),
-          ...(pos === Position.Right ? { right: '-7px' } : {}),
-        }}
-      />
-      <Handle
-        id={`${idPrefix}-source`}
-        type="source"
-        position={pos}
-        className={`${handleClass} opacity-0 hover:opacity-100 z-20`}
-        style={{
-          backgroundColor: isHighlighted ? activeColor : '#cbd5e1',
-          borderColor: '#fff',
-          ...(pos === Position.Top || pos === Position.Bottom ? { left: '50%', transform: 'translateX(-50%)' } : { top: '50%', transform: 'translateY(-50%)' }),
-          ...(pos === Position.Top ? { top: '-7px' } : {}),
-          ...(pos === Position.Bottom ? { bottom: '-7px' } : {}),
-          ...(pos === Position.Left ? { left: '-7px' } : {}),
-          ...(pos === Position.Right ? { right: '-7px' } : {}),
-        }}
-      />
-    </>
-  );
+  // Positions for handles: 25%, 50%, 75%
+  const HANDLE_POSITIONS = ['25%', '50%', '75%'];
+
+  const TripleHandle = ({ pos, idPrefix }: { pos: Position; idPrefix: string }) => {
+    const isVertical = pos === Position.Top || pos === Position.Bottom;
+
+    return (
+      <>
+        {HANDLE_POSITIONS.map((offset, idx) => {
+          const positionStyle = isVertical
+            ? { left: offset, transform: 'translateX(-50%)' }
+            : { top: offset, transform: 'translateY(-50%)' };
+
+          const edgeStyle = {
+            ...(pos === Position.Top ? { top: '-6px' } : {}),
+            ...(pos === Position.Bottom ? { bottom: '-6px' } : {}),
+            ...(pos === Position.Left ? { left: '-6px' } : {}),
+            ...(pos === Position.Right ? { right: '-6px' } : {}),
+          };
+
+          return (
+            <React.Fragment key={`${idPrefix}-${idx}`}>
+              <Handle
+                id={`${idPrefix}-${idx + 1}-target`}
+                type="target"
+                position={pos}
+                className={`${handleClass} z-10`}
+                style={{
+                  visibility: 'visible',
+                  backgroundColor: isHighlighted ? activeColor : '#cbd5e1',
+                  borderColor: '#fff',
+                  ...positionStyle,
+                  ...edgeStyle,
+                }}
+              />
+              <Handle
+                id={`${idPrefix}-${idx + 1}-source`}
+                type="source"
+                position={pos}
+                className={`${handleClass} opacity-0 hover:opacity-100 z-20`}
+                style={{
+                  backgroundColor: isHighlighted ? activeColor : '#cbd5e1',
+                  borderColor: '#fff',
+                  ...positionStyle,
+                  ...edgeStyle,
+                }}
+              />
+            </React.Fragment>
+          );
+        })}
+      </>
+    );
+  };
 
   return (
     <div
@@ -118,10 +136,10 @@ const CustomNode = ({ id, data, selected }: NodeProps<CustomNodeData>) => {
         '--tw-ring-color': isHighlighted ? `${activeColor}33` : `${activeColor}1a`,
       } as React.CSSProperties}
     >
-      <DualHandle pos={Position.Top} idPrefix="top" />
-      <DualHandle pos={Position.Left} idPrefix="left" />
-      <DualHandle pos={Position.Right} idPrefix="right" />
-      <DualHandle pos={Position.Bottom} idPrefix="bottom" />
+      <TripleHandle pos={Position.Top} idPrefix="top" />
+      <TripleHandle pos={Position.Left} idPrefix="left" />
+      <TripleHandle pos={Position.Right} idPrefix="right" />
+      <TripleHandle pos={Position.Bottom} idPrefix="bottom" />
 
       <div className="flex flex-col relative text-center">
         <span
