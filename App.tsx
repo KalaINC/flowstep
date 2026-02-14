@@ -14,11 +14,11 @@ import ReactFlow, {
   updateEdge,
   OnNodesChange,
 } from 'reactflow';
-import { RotateCcw, Settings2, Trash2, Palette, FolderOpen, ChevronUp, ChevronDown, Pen, Plus } from 'lucide-react';
+import { RotateCcw, Settings2, Trash2, Search, FolderOpen, ChevronUp, ChevronDown, Pen, Plus, X } from 'lucide-react';
 
 import { DEFAULT_FLOW_TEMPLATE } from './constants';
 import { AppMode, CustomNodeData, WorkflowData } from './types';
-import CustomNode from './components/CustomNode';
+import CustomNode, { LOG_HIGHLIGHT_THEME } from './components/CustomNode';
 import ControlPanel from './components/ControlPanel';
 
 const nodeTypes = {
@@ -27,7 +27,7 @@ const nodeTypes = {
 
 const GRID_STEP = 15;
 const NODE_WIDTH = 256;
-const THEME_STORAGE_KEY = 'flowstep_theme_persistent';
+
 const IGNORED_FLOW_FILES = new Set(['default.json']);
 const FLOW_SIDEBAR_WIDTH = 280;
 
@@ -105,7 +105,7 @@ const buildExportHtml = (data: any, themeColor: string) => {
   <body>
     <div id="root"></div>
     <script type="module">
-      import React, { useCallback, useMemo, useState } from 'react';
+      import React, { useCallback, useEffect, useMemo, useState } from 'react';
       import ReactDOM from 'react-dom/client';
       import ReactFlow, {
         Background,
@@ -122,6 +122,17 @@ const buildExportHtml = (data: any, themeColor: string) => {
       const FLOWSTEP_DATA = ${safeData};
       const THEME_COLOR = ${safeThemeColor};
       const GRID_STEP = 15;
+
+      const LOG_THEME = {
+        nodeBorder: '#EDA35A',
+        handleDot: '#EDA35A',
+        glowRing: '0 0 0 4px rgba(237, 163, 90, 0.35), 0 0 16px rgba(237, 163, 90, 0.2)',
+        borderWidth: '2px',
+        textMatchBg: '#fef08a',
+        textMatchColor: '#334155',
+        edgeStroke: '#EDA35A',
+        edgeWidth: 2,
+      };
 
       const CATEGORY_CONFIG = {
         start: {
@@ -160,8 +171,24 @@ const buildExportHtml = (data: any, themeColor: string) => {
         },
       };
 
+      const HighlightedDetail = ({ text, searchText }) => {
+        if (!searchText || searchText.trim().length === 0) return text;
+        const lower = text.toLowerCase();
+        const idx = lower.indexOf(searchText.toLowerCase().trim());
+        if (idx === -1) return text;
+        const before = text.slice(0, idx);
+        const match = text.slice(idx, idx + searchText.trim().length);
+        const after = text.slice(idx + searchText.trim().length);
+        return React.createElement(React.Fragment, null,
+          before,
+          React.createElement('span', { style: { backgroundColor: LOG_THEME.textMatchBg, borderRadius: '2px', padding: '0 2px', fontWeight: 700, color: LOG_THEME.textMatchColor } }, match),
+          after
+        );
+      };
+
       const CustomNode = ({ data, selected }) => {
         const isHighlighted = data.isHighlighted;
+        const isLogHighlighted = data.isLogHighlighted;
         const isVisible = data.isVisible !== false;
 
         if (!isVisible) return React.createElement('div', { className: 'opacity-0 pointer-events-none' });
@@ -196,7 +223,7 @@ const buildExportHtml = (data: any, themeColor: string) => {
                   className: handleClass + ' z-10',
                   style: {
                     visibility: 'visible',
-                    backgroundColor: isHighlighted ? activeColor : '#cbd5e1',
+                    backgroundColor: isLogHighlighted ? LOG_THEME.handleDot : (isHighlighted ? activeColor : '#cbd5e1'),
                     borderColor: '#fff',
                     ...positionStyle,
                     ...edgeStyle
@@ -208,7 +235,7 @@ const buildExportHtml = (data: any, themeColor: string) => {
                   position: pos,
                   className: handleClass + ' opacity-0 hover:opacity-100 z-20',
                   style: {
-                    backgroundColor: isHighlighted ? activeColor : '#cbd5e1',
+                    backgroundColor: isLogHighlighted ? LOG_THEME.handleDot : (isHighlighted ? activeColor : '#cbd5e1'),
                     borderColor: '#fff',
                     ...positionStyle,
                     ...edgeStyle
@@ -219,6 +246,8 @@ const buildExportHtml = (data: any, themeColor: string) => {
           );
         };
 
+        const logGlow = isLogHighlighted ? LOG_THEME.glowRing : undefined;
+
         return (
           React.createElement('div', {
             className: 'group relative px-4 py-3 transition-all duration-300 w-64' +
@@ -226,11 +255,11 @@ const buildExportHtml = (data: any, themeColor: string) => {
               (selected ? ' ring-2' : ''),
             style: {
               backgroundColor: config.backgroundColor,
-              borderColor: isHighlighted ? activeColor : (selected ? activeColor : config.borderColor),
+              borderColor: isLogHighlighted ? LOG_THEME.nodeBorder : (isHighlighted ? activeColor : (selected ? activeColor : config.borderColor)),
               borderRadius: config.borderRadius || '0.75rem',
               borderStyle: config.borderStyle || 'solid',
-              borderWidth: config.borderWidth || '2px',
-              boxShadow: config.boxShadow,
+              borderWidth: isLogHighlighted ? LOG_THEME.borderWidth : (config.borderWidth || '2px'),
+              boxShadow: isLogHighlighted ? logGlow : config.boxShadow,
               '--tw-ring-color': isHighlighted ? activeColor + '33' : activeColor + '1a'
             }
           },
@@ -254,7 +283,7 @@ const buildExportHtml = (data: any, themeColor: string) => {
                       React.createElement('li', {
                         key: idx,
                         className: 'text-[10px] leading-tight text-slate-500 font-medium'
-                      }, detail)
+                      }, React.createElement(HighlightedDetail, { text: detail, searchText: isLogHighlighted ? data.logSearchText : null }))
                     ))
                   )
                 )
@@ -272,6 +301,12 @@ const buildExportHtml = (data: any, themeColor: string) => {
         const [mode, setMode] = useState('READER');
         const [visibleNodeIds, setVisibleNodeIds] = useState(new Set());
         const [activeNodeId, setActiveNodeId] = useState(null);
+
+        // Log Lookup State
+        const [logSearchText, setLogSearchText] = useState('');
+        const [logHighlightedNodeIds, setLogHighlightedNodeIds] = useState(new Set());
+        const [logHighlightedEdgeIds, setLogHighlightedEdgeIds] = useState(new Set());
+        const [logMatchedNodeLabel, setLogMatchedNodeLabel] = useState(null);
 
         const selectedNode = useMemo(() => nodes.find(n => n.selected), [nodes]);
 
@@ -292,6 +327,52 @@ const buildExportHtml = (data: any, themeColor: string) => {
             setActiveNodeId(null);
           }
         }, [initializeSequence]);
+
+        // Log search: find matching node and trace path back to root
+        useEffect(() => {
+          const trimmed = logSearchText.trim();
+          if (trimmed.length === 0) {
+            setLogHighlightedNodeIds(new Set());
+            setLogHighlightedEdgeIds(new Set());
+            setLogMatchedNodeLabel(null);
+            return;
+          }
+          const timer = setTimeout(() => {
+            const lowerSearch = trimmed.toLowerCase();
+            const targetNode = nodes.find(n => n.data.details && n.data.details.some(d => d.toLowerCase().includes(lowerSearch)));
+            if (!targetNode) {
+              setLogHighlightedNodeIds(new Set());
+              setLogHighlightedEdgeIds(new Set());
+              setLogMatchedNodeLabel(null);
+              return;
+            }
+            const predecessorMap = new Map();
+            edges.forEach(e => {
+              if (!predecessorMap.has(e.target)) predecessorMap.set(e.target, []);
+              predecessorMap.get(e.target).push({ nodeId: e.source, edgeId: e.id });
+            });
+            const visitedNodes = new Set([targetNode.id]);
+            const visitedEdges = new Set();
+            const queue = [targetNode.id];
+            while (queue.length > 0) {
+              const current = queue.shift();
+              const preds = predecessorMap.get(current);
+              if (preds) {
+                for (const { nodeId, edgeId } of preds) {
+                  visitedEdges.add(edgeId);
+                  if (!visitedNodes.has(nodeId)) {
+                    visitedNodes.add(nodeId);
+                    queue.push(nodeId);
+                  }
+                }
+              }
+            }
+            setLogHighlightedNodeIds(visitedNodes);
+            setLogHighlightedEdgeIds(visitedEdges);
+            setLogMatchedNodeLabel(targetNode.data.label);
+          }, 300);
+          return () => clearTimeout(timer);
+        }, [logSearchText, nodes, edges]);
 
         const advanceSequence = useCallback(() => {
           const nextNodeIds = new Set(Array.from(visibleNodeIds));
@@ -325,33 +406,37 @@ const buildExportHtml = (data: any, themeColor: string) => {
           return nodes.map(node => {
             const isVisible = mode === 'READER' || visibleNodeIds.has(node.id);
             const isHighlighted = mode === 'SEQUENCE' && activeNodeId === node.id;
+            const isLogHighlighted = logHighlightedNodeIds.has(node.id);
             return {
               ...node,
               draggable: false,
               data: {
                 ...node.data,
                 isVisible,
-                isHighlighted
+                isHighlighted,
+                isLogHighlighted,
+                logSearchText: isLogHighlighted ? logSearchText : null,
               }
             };
           });
-        }, [nodes, mode, visibleNodeIds, activeNodeId]);
+        }, [nodes, mode, visibleNodeIds, activeNodeId, logHighlightedNodeIds, logSearchText]);
 
         const displayEdges = useMemo(() => {
           return edges.map(edge => {
             const sourceVisible = mode === 'READER' || visibleNodeIds.has(edge.source);
             const targetVisible = mode === 'READER' || visibleNodeIds.has(edge.target);
             const isVisible = sourceVisible && targetVisible;
+            const isLogHL = logHighlightedEdgeIds.has(edge.id);
 
             return {
               ...edge,
               hidden: !isVisible,
-              animated: mode === 'SEQUENCE' && isVisible,
-              markerEnd: { type: MarkerType.ArrowClosed, color: isVisible ? '#64748b' : '#cbd5e1' },
-              style: { stroke: isVisible ? '#64748b' : '#cbd5e1', strokeWidth: 2 }
+              animated: (mode === 'SEQUENCE' && isVisible) || isLogHL,
+              markerEnd: { type: MarkerType.ArrowClosed, color: isLogHL ? LOG_THEME.edgeStroke : (isVisible ? '#64748b' : '#cbd5e1') },
+              style: { stroke: isLogHL ? LOG_THEME.edgeStroke : (isVisible ? '#64748b' : '#cbd5e1'), strokeWidth: isLogHL ? LOG_THEME.edgeWidth : 2 }
             };
           });
-        }, [edges, mode, visibleNodeIds]);
+        }, [edges, mode, visibleNodeIds, logHighlightedEdgeIds]);
 
         const canGoNext = useMemo(() => {
           if (mode !== 'SEQUENCE') return false;
@@ -428,8 +513,8 @@ const buildExportHtml = (data: any, themeColor: string) => {
             React.createElement('div', {
               className: 'absolute top-6 right-6 z-50 w-72 bg-white/80 backdrop-blur-md rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]'
             },
-              React.createElement('div', { className: 'p-4 border-b border-slate-100 bg-slate-50/50' },
-                React.createElement('h3', { className: 'text-slate-900 font-bold text-base' }, 'Node Details')
+              React.createElement('div', { className: 'p-4 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2' },
+                React.createElement('h3', { className: 'text-slate-900 font-bold text-base' }, selectedNode ? 'Node Details' : 'Log Lookup')
               ),
               React.createElement('div', { className: 'flex-grow overflow-y-auto p-4 space-y-4' },
                 selectedNode ? (
@@ -446,7 +531,49 @@ const buildExportHtml = (data: any, themeColor: string) => {
                     )
                   )
                 ) : (
-                  React.createElement('p', { className: 'text-xs text-slate-400' }, 'Select a node to view details.')
+                  React.createElement('div', { className: 'space-y-4' },
+                    React.createElement('div', { className: 'space-y-2' },
+                      React.createElement('label', { className: 'text-[11px] font-bold text-slate-500 uppercase tracking-wider' }, 'Paste Log Message'),
+                      React.createElement('div', { className: 'relative' },
+                        React.createElement('textarea', {
+                          value: logSearchText,
+                          onChange: (e) => setLogSearchText(e.target.value),
+                          rows: 4,
+                          className: 'w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all resize-none pr-8',
+                          style: { '--tw-ring-color': THEME_COLOR },
+                          placeholder: 'Paste a log line here to highlight the path\u2026'
+                        }),
+                        logSearchText.length > 0 && (
+                          React.createElement('button', {
+                            onClick: () => setLogSearchText(''),
+                            className: 'absolute top-2 right-2 p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all',
+                            title: 'Clear'
+                          }, '\u2715')
+                        )
+                      )
+                    ),
+                    logSearchText.trim().length > 0 && (
+                      React.createElement('div', {
+                        className: 'p-3 rounded-xl border text-[11px] font-medium leading-relaxed ' +
+                          (logMatchedNodeLabel ? 'bg-amber-50 border-amber-200 text-amber-800' : 'bg-slate-50 border-slate-200 text-slate-500')
+                      },
+                        logMatchedNodeLabel ? (
+                          React.createElement(React.Fragment, null,
+                            React.createElement('span', { className: 'font-bold' }, 'Match found: '),
+                            React.createElement('span', { className: 'italic' }, logMatchedNodeLabel),
+                            React.createElement('p', { className: 'mt-1 text-[10px] opacity-75' },
+                              logHighlightedNodeIds.size + ' nodes and ' + logHighlightedEdgeIds.size + ' edges highlighted on the path.'
+                            )
+                          )
+                        ) : 'No matching node found for this log text.'
+                      )
+                    ),
+                    React.createElement('div', { className: 'p-4 bg-slate-50 border border-slate-100 rounded-2xl' },
+                      React.createElement('p', { className: 'text-[11px] text-slate-500 leading-relaxed font-medium' },
+                        'Paste a log message from support \u2014 the path from start to the matching node will be highlighted.'
+                      )
+                    )
+                  )
                 )
               )
             ),
@@ -580,10 +707,8 @@ const normalizeFlowData = (data: WorkflowData) => {
 const AppContent = () => {
   const edgeUpdateSuccessful = useRef(true);
 
-  // Theme State
-  const [themeColor, setThemeColor] = useState(() => {
-    return localStorage.getItem(THEME_STORAGE_KEY) || '#6366f1';
-  });
+  // Theme State (hardcoded)
+  const themeColor = '#6366f1';
 
   const [nodes, setNodes, onNodesChangeBase] = useNodesState(DEFAULT_FLOW_TEMPLATE.nodes);
   const [edges, setEdges, onEdgesChangeBase] = useEdgesState(DEFAULT_FLOW_TEMPLATE.edges);
@@ -624,6 +749,12 @@ const AppContent = () => {
   const [visibleNodeIds, setVisibleNodeIds] = useState<Set<string>>(new Set());
   const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
 
+  // Log Lookup State
+  const [logSearchText, setLogSearchText] = useState('');
+  const [logHighlightedNodeIds, setLogHighlightedNodeIds] = useState<Set<string>>(new Set());
+  const [logHighlightedEdgeIds, setLogHighlightedEdgeIds] = useState<Set<string>>(new Set());
+  const [logMatchedNodeLabel, setLogMatchedNodeLabel] = useState<string | null>(null);
+
   // Track the currently selected node for editing in sidebar
   const selectedNode = useMemo(() => nodes.find(n => n.selected), [nodes]);
   const selectedEdge = useMemo(() => edges.find(e => e.selected), [edges]);
@@ -633,9 +764,68 @@ const AppContent = () => {
     setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 5000);
   }, []);
 
+  // Log search: find matching node and trace path back to root
   useEffect(() => {
-    localStorage.setItem(THEME_STORAGE_KEY, themeColor);
-  }, [themeColor]);
+    const trimmed = logSearchText.trim();
+    if (trimmed.length === 0) {
+      setLogHighlightedNodeIds(new Set());
+      setLogHighlightedEdgeIds(new Set());
+      setLogMatchedNodeLabel(null);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      const lowerSearch = trimmed.toLowerCase();
+
+      // Find the target node whose details contain the search text
+      const targetNode = nodes.find((n) =>
+        n.data.details?.some((d) => d.toLowerCase().includes(lowerSearch))
+      );
+
+      if (!targetNode) {
+        setLogHighlightedNodeIds(new Set());
+        setLogHighlightedEdgeIds(new Set());
+        setLogMatchedNodeLabel(null);
+        return;
+      }
+
+      // BFS backward from target to find all paths to root nodes
+      const predecessorMap = new Map<string, { nodeId: string; edgeId: string }[]>();
+      edges.forEach((e) => {
+        if (!predecessorMap.has(e.target)) predecessorMap.set(e.target, []);
+        predecessorMap.get(e.target)!.push({ nodeId: e.source, edgeId: e.id });
+      });
+
+      // Find root nodes (no incoming edges)
+      const incomingTargets = new Set(edges.map((e) => e.target));
+      const rootNodeIds = new Set(nodes.filter((n) => !incomingTargets.has(n.id)).map((n) => n.id));
+
+      // BFS backward from target
+      const visitedNodes = new Set<string>([targetNode.id]);
+      const visitedEdges = new Set<string>();
+      const queue = [targetNode.id];
+
+      while (queue.length > 0) {
+        const current = queue.shift()!;
+        const preds = predecessorMap.get(current);
+        if (preds) {
+          for (const { nodeId, edgeId } of preds) {
+            visitedEdges.add(edgeId);
+            if (!visitedNodes.has(nodeId)) {
+              visitedNodes.add(nodeId);
+              queue.push(nodeId);
+            }
+          }
+        }
+      }
+
+      setLogHighlightedNodeIds(visitedNodes);
+      setLogHighlightedEdgeIds(visitedEdges);
+      setLogMatchedNodeLabel(targetNode.data.label);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [logSearchText, nodes, edges]);
 
   const flowMenuPosition = useMemo(() => {
     if (!flowMenuAnchor || typeof window === 'undefined') return null;
@@ -995,7 +1185,7 @@ const AppContent = () => {
     if (confirm('Reset layout to default template? This will clear your current changes.')) {
       setNodes(DEFAULT_FLOW_TEMPLATE.nodes);
       setEdges(DEFAULT_FLOW_TEMPLATE.edges);
-      setThemeColor('#6366f1');
+
       setFlowDirty(Boolean(selectedFlow));
       showToast('Reset to defaults');
     }
@@ -1166,6 +1356,7 @@ const AppContent = () => {
     return nodes.map((node) => {
       const isVisible = mode === AppMode.EDIT || visibleNodeIds.has(node.id);
       const isHighlighted = mode === AppMode.SEQUENCE && activeNodeId === node.id;
+      const isLogHighlighted = logHighlightedNodeIds.has(node.id);
       return {
         ...node,
         draggable: mode === AppMode.EDIT,
@@ -1173,26 +1364,35 @@ const AppContent = () => {
           ...node.data,
           isVisible,
           isHighlighted,
+          isLogHighlighted,
+          logSearchText: isLogHighlighted ? logSearchText : undefined,
         },
       };
     });
-  }, [nodes, mode, visibleNodeIds, activeNodeId]);
+  }, [nodes, mode, visibleNodeIds, activeNodeId, logHighlightedNodeIds, logSearchText]);
 
   const displayEdges = useMemo(() => {
     return edges.map((edge) => {
       const sourceVisible = mode === AppMode.EDIT || visibleNodeIds.has(edge.source);
       const targetVisible = mode === AppMode.EDIT || visibleNodeIds.has(edge.target);
       const isVisible = sourceVisible && targetVisible;
+      const isLogHighlighted = logHighlightedEdgeIds.has(edge.id);
 
       return {
         ...edge,
         hidden: !isVisible,
-        animated: mode === AppMode.SEQUENCE && isVisible,
-        markerEnd: { type: MarkerType.ArrowClosed, color: isVisible ? '#64748b' : '#cbd5e1' },
-        style: { stroke: isVisible ? '#64748b' : '#cbd5e1', strokeWidth: 2 },
+        animated: (mode === AppMode.SEQUENCE && isVisible) || isLogHighlighted,
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: isLogHighlighted ? LOG_HIGHLIGHT_THEME.edgeStroke : (isVisible ? '#64748b' : '#cbd5e1'),
+        },
+        style: {
+          stroke: isLogHighlighted ? LOG_HIGHLIGHT_THEME.edgeStroke : (isVisible ? '#64748b' : '#cbd5e1'),
+          strokeWidth: isLogHighlighted ? LOG_HIGHLIGHT_THEME.edgeWidth : 2,
+        },
       };
     });
-  }, [edges, mode, visibleNodeIds, themeColor]);
+  }, [edges, mode, visibleNodeIds, logHighlightedEdgeIds]);
 
   const onConnect = useCallback(
     (params: Connection) => {
@@ -1494,10 +1694,10 @@ const AppContent = () => {
           ) : selectedEdge ? (
             <Settings2 size={18} style={{ color: themeColor }} />
           ) : (
-            <Palette size={18} style={{ color: themeColor }} />
+            <Search size={18} style={{ color: themeColor }} />
           )}
           <h3 className="text-slate-900 font-bold text-base">
-            {selectedNode ? 'Edit Node' : selectedEdge ? 'Edit Connection' : 'Global Settings'}
+            {selectedNode ? 'Edit Node' : selectedEdge ? 'Edit Connection' : 'Log Lookup'}
           </h3>
         </div>
 
@@ -1553,56 +1753,54 @@ const AppContent = () => {
               </div>
             </div>
           ) : (
-            <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-200">
+            <div className="space-y-5 animate-in fade-in slide-in-from-right-2 duration-200">
               <div className="space-y-2">
-                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Theme Accent Color</label>
-                <div className="flex gap-2 items-center">
-                  <div
-                    className="w-10 h-10 rounded-xl shadow-inner border border-slate-200 relative overflow-hidden"
-                    style={{ backgroundColor: themeColor }}
-                  >
-                    <input
-                      type="color"
-                      value={themeColor}
-                      onChange={(e) => setThemeColor(e.target.value)}
-                      className="absolute inset-0 opacity-0 cursor-pointer"
-                    />
-                  </div>
-                  <input
-                    type="text"
-                    value={themeColor}
-                    onChange={(e) => setThemeColor(e.target.value)}
-                    className="flex-grow px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono focus:outline-none focus:ring-2 transition-all"
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Paste Log Message</label>
+                <div className="relative">
+                  <textarea
+                    value={logSearchText}
+                    onChange={(e) => setLogSearchText(e.target.value)}
+                    onKeyDown={(e) => e.stopPropagation()}
+                    rows={4}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all resize-none pr-8"
                     style={{ '--tw-ring-color': themeColor } as any}
+                    placeholder="Paste a log line here to highlight the path…"
                   />
-                </div>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {['#6366f1', '#fe5100', '#10b981', '#f59e0b', '#ec4899', '#0ea5e9'].map(color => (
+                  {logSearchText.length > 0 && (
                     <button
-                      key={color}
-                      onClick={() => setThemeColor(color)}
-                      className={`w-6 h-6 rounded-full border border-white shadow-sm ring-1 ring-slate-100 transition-transform hover:scale-110 active:scale-90 ${themeColor === color ? 'ring-2 ring-slate-400 scale-110' : ''}`}
-                      style={{ backgroundColor: color }}
-                    />
-                  ))}
+                      onClick={() => setLogSearchText('')}
+                      className="absolute top-2 right-2 p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all"
+                      title="Clear"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
                 </div>
               </div>
+
+              {logSearchText.trim().length > 0 && (
+                <div className={`p-3 rounded-xl border text-[11px] font-medium leading-relaxed ${logMatchedNodeLabel
+                  ? 'bg-amber-50 border-amber-200 text-amber-800'
+                  : 'bg-slate-50 border-slate-200 text-slate-500'
+                  }`}>
+                  {logMatchedNodeLabel ? (
+                    <>
+                      <span className="font-bold">Match found:</span>{' '}
+                      <span className="italic">{logMatchedNodeLabel}</span>
+                      <p className="mt-1 text-[10px] opacity-75">
+                        {logHighlightedNodeIds.size} nodes and {logHighlightedEdgeIds.size} edges highlighted on the path.
+                      </p>
+                    </>
+                  ) : (
+                    <span>No matching node found for this log text.</span>
+                  )}
+                </div>
+              )}
 
               <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
                 <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
-                  The accent color affects buttons, active borders, sequence highlights, and flow connections.
+                  Paste a log message from support — the path from start to the matching node will be highlighted in amber.
                 </p>
-              </div>
-
-              <div className="pt-4 border-t border-slate-100">
-                <p className="text-slate-400 text-[10px] mb-3 uppercase tracking-wider font-bold">Persistence</p>
-                <button
-                  onClick={handleResetToDefault}
-                  className="w-full py-2.5 px-3 border border-slate-200 rounded-xl text-slate-500 hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition-all text-[11px] font-bold flex items-center justify-center gap-2"
-                >
-                  <RotateCcw size={14} />
-                  Reset Defaults
-                </button>
               </div>
             </div>
           )}

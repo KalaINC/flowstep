@@ -16,6 +16,8 @@ export interface CustomNodeData {
   details?: string[];
   isHighlighted?: boolean;
   isVisible?: boolean;
+  isLogHighlighted?: boolean;
+  logSearchText?: string;
   category?: 'start' | 'end' | 'decision' | 'error' | 'process';
 }
 

@@ -2,6 +2,20 @@ import React, { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { CustomNodeData } from '../types';
 
+// ✏️ TWEAK THESE to change the log-highlight look across the entire app
+export const LOG_HIGHLIGHT_THEME = {
+  //nodeBg: '#fffbeb',           // node background
+  nodeBorder: '#EDA35A',       // node border
+  //nodeLabel: '#334155',        // node title text
+  handleDot: '#EDA35A',        // connection handle dots
+  glowRing: '0 0 0 4px rgba(237, 163, 90, 0.35), 0 0 16px rgba(237, 163, 90, 0.2)',
+  borderWidth: '2px',
+  //textMatchBg: '#fef08a',      // matched substring background
+  //textMatchColor: '#334155',   // matched substring text
+  edgeStroke: '#EDA35A',       // edge line color  (used in App.tsx)
+  edgeWidth: 2,                // edge line width  (used in App.tsx)
+};
+
 // Definition der visuellen Stile pro Kategorie (inline styles for reliability)
 interface CategoryStyle {
   color: string;
@@ -52,8 +66,32 @@ const CATEGORY_CONFIG: Record<string, CategoryStyle> = {
   },
 };
 
+/** Highlight matching substring in a detail string */
+const HighlightedDetail = ({ text, searchText }: { text: string; searchText?: string }) => {
+  if (!searchText || searchText.trim().length === 0) {
+    return <>{text}</>;
+  }
+  const lowerText = text.toLowerCase();
+  const lowerSearch = searchText.toLowerCase().trim();
+  const idx = lowerText.indexOf(lowerSearch);
+  if (idx === -1) return <>{text}</>;
+
+  const before = text.slice(0, idx);
+  const match = text.slice(idx, idx + lowerSearch.length);
+  const after = text.slice(idx + lowerSearch.length);
+
+  return (
+    <>
+      {before}
+      <span style={{ backgroundColor: '#fef08a', borderRadius: '2px', padding: '0 2px', fontWeight: 700, color: '#334155' }}>{match}</span>
+      {after}
+    </>
+  );
+};
+
 const CustomNode = ({ id, data, selected }: NodeProps<CustomNodeData>) => {
   const isHighlighted = data.isHighlighted;
+  const isLogHighlighted = data.isLogHighlighted;
   const isVisible = data.isVisible !== false;
 
   // Bestimme die Kategorie (Default ist 'process')
@@ -94,7 +132,7 @@ const CustomNode = ({ id, data, selected }: NodeProps<CustomNodeData>) => {
                 className={`${handleClass} z-10`}
                 style={{
                   visibility: 'visible',
-                  backgroundColor: isHighlighted ? activeColor : '#cbd5e1',
+                  backgroundColor: isLogHighlighted ? LOG_HIGHLIGHT_THEME.handleDot : (isHighlighted ? activeColor : '#cbd5e1'),
                   borderColor: '#fff',
                   ...positionStyle,
                   ...edgeStyle,
@@ -106,7 +144,7 @@ const CustomNode = ({ id, data, selected }: NodeProps<CustomNodeData>) => {
                 position={pos}
                 className={`${handleClass} opacity-0 hover:opacity-100 z-20`}
                 style={{
-                  backgroundColor: isHighlighted ? activeColor : '#cbd5e1',
+                  backgroundColor: isLogHighlighted ? LOG_HIGHLIGHT_THEME.handleDot : (isHighlighted ? activeColor : '#cbd5e1'),
                   borderColor: '#fff',
                   ...positionStyle,
                   ...edgeStyle,
@@ -119,6 +157,11 @@ const CustomNode = ({ id, data, selected }: NodeProps<CustomNodeData>) => {
     );
   };
 
+  // Determine border and ring styling
+  const logRingStyle = isLogHighlighted
+    ? { boxShadow: LOG_HIGHLIGHT_THEME.glowRing }
+    : {};
+
   return (
     <div
       className={`
@@ -128,11 +171,11 @@ const CustomNode = ({ id, data, selected }: NodeProps<CustomNodeData>) => {
       `}
       style={{
         backgroundColor: config.backgroundColor,
-        borderColor: isHighlighted ? activeColor : (selected ? activeColor : config.borderColor),
+        borderColor: isLogHighlighted ? LOG_HIGHLIGHT_THEME.nodeBorder : (isHighlighted ? activeColor : (selected ? activeColor : config.borderColor)),
         borderRadius: config.borderRadius || '0.75rem', // default to rounded-xl
         borderStyle: config.borderStyle || 'solid',
-        borderWidth: config.borderWidth || '2px',
-        boxShadow: config.boxShadow,
+        borderWidth: isLogHighlighted ? LOG_HIGHLIGHT_THEME.borderWidth : (config.borderWidth || '2px'),
+        boxShadow: isLogHighlighted ? logRingStyle.boxShadow : config.boxShadow,
         '--tw-ring-color': isHighlighted ? `${activeColor}33` : `${activeColor}1a`,
       } as React.CSSProperties}
     >
@@ -158,7 +201,7 @@ const CustomNode = ({ id, data, selected }: NodeProps<CustomNodeData>) => {
             <ul className="list-disc pl-4 space-y-1 text-left">
               {data.details.map((detail, idx) => (
                 <li key={idx} className="text-[10px] leading-tight text-slate-500 font-medium">
-                  {detail}
+                  <HighlightedDetail text={detail} searchText={isLogHighlighted ? data.logSearchText : undefined} />
                 </li>
               ))}
             </ul>
