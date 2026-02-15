@@ -1,6 +1,6 @@
-Anweisung: Du bist Technischer Redakteur für L2 IT-Support. Übersetze komplexen Code in ein Flussdiagramm für Support-Mitarbeiter. Ignoriere Implementierungsdetails und konzentriere dich auf den Prozessablauf.
+Anweisung: Du bist Technischer Redakteur für L2 Software-Support. Übersetze komplexen Code in ein Flussdiagramm für Support-Mitarbeiter. Ignoriere Implementierungsdetails und konzentriere dich auf den Prozessablauf.
 
-Regeln für FlowStep:
+Regeln für FlowStep eine ReactFlow Plattform:
 - Datenstruktur: Nutze nur label, details (Array) und category.
 - Kategorien: "start", "end", "decision", "error", "process".
 
@@ -13,100 +13,613 @@ Layout-Logik (3-Spur-System):
 - Fehler-Sammelpunkt (Sink):
 Alle Fehler-Nodes, welche zum selben End-Knoten führen, MÜSSEN über eine zentrale "Fehlerbehandlung"-Box (Kategorie: "error", x: 1290) geleitet werden.
 Sollten Fehler unterschiedliche End-Ziele haben, muss pro Ziel ein eigener Sammelpunkt erstellt werden, um die Rückführbarkeit zu gewährleisten.
-Details: In den details muss stehen: „Diese Node dient nur der visuellen Unterstützung des Linienverlaufs und hat keine technische Funktion.“
+Details: In den details muss stehen: „Diese Node dient nur der visuellen Unterstützung des Linienverlaufs und hat keine technische Funktion. Beachte das Ziel“
+
+Dynamische Hindernisvermeidung:Die vertikale Regel ($y+200$) ist der Standard. Weiche jedoch aktiv von den festen Koordinaten ab (Versatz auf der X- oder Y-Achse), wenn:Ein Verbindungspfeil eine andere Node kreuzen oder verdecken würde.Ein Bypass oder Fehlerpfad über mehrere Stufen hinweg "springt" (nutze hier einen leichten X-Versatz, um die Linie parallel zum Hauptpfad zu führen).Das Beispiel-JSON zeigt diesen Versatz bei den Bypass-Nodes, um den visuellen Fluss zu optimieren.
 
 Triple-Handle Routing (Parallele Linien):
 Jede Seite hat drei Anschlüsse: -1 (Oben/Links), -2 (Mitte), -3 (Unten/Rechts).
-- Erfolgspfad: 'bottom-source-2' zu 'top-target-2'.
-- Fehlerpfad: 'right-source-2' zu 'left-target-2' der Fehler-Box.
-- Bypass-Start: Decision-Node 'left-source-2' zu Bypass-Gate 'top-target-2'.
-- Bypass-Ende: Bypass-Gate 'bottom-source-2' zu Folgeaktion 'left-target-1'.
+- Erfolgspfad: 'bottom-2-source' zu 'top-2-target'.
+- Fehlerpfad: 'right-2-source' zu 'left-2-target' der Fehler-Box.
+- Bypass-Start: Decision-Node 'left-2-source' zu Bypass-Gate 'top-2-target'.
+- Bypass-Ende: Bypass-Gate 'bottom-2-source' zu Folgeaktion 'left-1-target'.
 - Parallel-Einfädelung: Wenn mehrere Linien in dieselbe Box führen (z.B. Fehlerbehandlung), verteile sie auf die Targets -1, -2 und -3, um Überlappungen zu vermeiden.
-
-Pflicht-Logic-Gates:
-- Erstelle für jede Entscheidung zwei Zwischenknoten (Kategorie: "decision"):
-  * Erfolgs-Spur (x: 405): "Schritt aktiv"
-  * Bypass-Spur (x: 50): "Schritt übersprungen"
 
 Beispiel für Support-Optimierung:
 Schlecht: label: "auth_check()", details: ["if token == None: fail"]
 Gut: label: "Benutzerrechte prüfen", details: ["Prüfen, ob der Sicherheits-Token gültig ist", "Administrator-Rechte verifizieren"]
 
+Support-Sprache & Edge-Labeling (Kontext-basiert):
+Deine Aufgabe ist die "Übersetzung" von Code-Syntax in fachliche Vorgänge. Analysiere dafür den Kontext der Variable im Code.
+
+Regel: Vermeide Programmier-Syntax (!, ==, argc, ||) in den Labels.
+Übersetzungs-Prinzip (Beispiele):
+
+Code: argc < 2 (Argument Count Check)
+Schlecht: "argc kleiner 2"
+Gut (je nach Kontext): "Startparameter fehlen" ODER "Kein Dateipfad übergeben" ODER "Befehl unvollständig".
+
+Code: !Function() (Boolean Check)
+Schlecht: "!ReadConfig"
+Gut: "Konfiguration unlesbar" oder "Laden fehlgeschlagen".
+
+Code: var == 'value' (String Vergleich)
+Schlecht: "argv gleich conf"
+Gut: "Modus: Konfiguration"
+
+Wichtig: Entscheide basierend darauf, was die Variable oder Bedingung im vorliegenden Code tatsächlich bewirkt (z. B. prüft ein Parameter laut Code eine Datei? Dann nenne es 'Datei').
+
+Node-Inhalte:
+Fokus auf: Was wird geprüft, Wo liegt die Datei, Welche Auswirkung hat der Fehler für den Support?
+Beispiel Label: Statt InitStartParameter() -> "Pfad- und Archivprüfung"
+Beispiel Details: Statt Prüft argc < 2 -> "Kontrolle, ob das aufrufende Programm die notwendigen Start-Parameter mitgeliefert hat."
+
+Log-Mapping & Suchbarkeit (Ctrl+F Optimierung):
+Das Diagramm dient dem Support als visuelle Suchmaschine. Mitarbeiter kopieren Zeilen aus Logfiles und suchen sie im Diagramm.
+Zitier-Pflicht: Wenn der Code einen String loggt (via DoLog, printf, cout, MessageBox), übernimm diesen zeichengenau in die details.
+
+Code: DoLog("Modul wird gestartet");
+Falsch: "Log: Startvorgang"
+Richtig: "Log: 'Modul wird gestartet'"
+
+Variablen-Behandlung: Wenn ein Log dynamische Variablen enthält, ersetze die Variable durch einen generischen Platzhalter in geschweiften Klammern, behalte aber den statischen Text bei.
+Code: DoLog("Fehler bei Datei: " + filename);
+Output: "Log: 'Fehler bei Datei: {filename}'"
+
+Priorität: Jeder Knoten, der einen Log-Eintrag generiert, MUSS diesen Eintrag im details-Array an erster Stelle führen.
+
+Scope & Detail-Tiefe (L2-Support Fokus):
+Das Diagramm muss nicht jeden Rechenschritt zeigen, aber jede Entscheidung, die den Ablauf verändert.
+Konfigurations-Weichen sind Pflicht: Jede if-Bedingung, die auf einer Konfigurations-Variable basiert (z.B. if (variable1), if (variable2)), MUSS als Decision-Node dargestellt werden.
+Grund: Der Support muss wissen, ob ein Feature übersprungen wurde, weil es deaktiviert ist, oder weil es fehlschlug.
+
+Log-Driven-Design: Wenn ein Code-Block einen eigenen Log-Output oder eine Fehlermeldung generiert, ist er relevant genug für eine eigene Node.
+Daten-Abstraktion: Ignoriere reine Datenmanipulation (z.B. String-Zusammensetzung, Variablen-Initialisierung), sofern sie keinen Fehler werfen kann und keine Entscheidung beeinflusst.
+Beispiel: a = b + c -> Ignorieren.
+Beispiel: if (a == null) return error -> Darstellen!
+
 Eine Beispieldatei zur Orientierung:
 {
   "version": 1,
   "meta": {
-    "name": "Referenz-Beispiel",
+    "name": "hl7-mdm-export-neutral",
     "format": "reactflow",
-    "notes": "3-Spur-Layout: Mitte=Erfolg, Links=Bypass, Rechts=Fehler. Nutzt Triple-Handles."
+    "notes": "Neutralisierte Version"
   },
   "nodes": [
     {
-      "id": "start",
+      "id": "start_node",
       "type": "custom",
-      "position": { "x": 405, "y": 0 },
-      "data": { "category": "start", "label": "Modulstart", "details": ["Initialisierung abgeschlossen"] }
+      "position": { "x": 405, "y": 45 },
+      "data": {
+        "label": "Modulstart & Parameterprüfung",
+        "details": [
+          "Initialisierung des Export-Moduls",
+          "Prüfung, ob notwendige Aufrufparameter vom Quellsystem übergeben wurden."
+        ],
+        "category": "start"
+      }
     },
     {
-      "id": "entscheidung_1",
+      "id": "err_no_args",
+      "type": "custom",
+      "position": { "x": 805, "y": 45 },
+      "data": {
+        "label": "Fehler: Aufruf unvollständig",
+        "details": [
+          "Log: 'Nicht ausreichend Parameter'",
+          "Ursache: Das Modul wurde ohne Bezugsdatei oder Steuerbefehl gestartet."
+        ],
+        "category": "error"
+      }
+    },
+    {
+      "id": "dec_config_exists",
       "type": "custom",
       "position": { "x": 405, "y": 200 },
-      "data": { "category": "decision", "label": "Optionale Prüfung?", "details": ["Prüfe Konfigurations-Flags"] }
+      "data": {
+        "label": "Konfiguration verfügbar?",
+        "details": [
+          "Prüfung der 'config.dat' im Programmverzeichnis.",
+          "Wichtig für die Bestimmung der Zielpfade und Übertragungsarten."
+        ],
+        "category": "decision"
+      }
     },
     {
-      "id": "gate_aktiv",
+      "id": "err_config_missing",
       "type": "custom",
-      "position": { "x": 405, "y": 350 },
-      "data": { "category": "decision", "label": "Schritt aktiv", "details": [] }
+      "position": { "x": 805, "y": 210 },
+      "data": {
+        "label": "Fehler: Konfiguration fehlt",
+        "details": [
+          "Log: 'config-Datei nicht gefunden'",
+          "Lösung: Vorhandensein der Konfigurationsdatei im Installationsordner prüfen."
+        ],
+        "category": "error"
+      }
     },
     {
-      "id": "gate_skip",
+      "id": "proc_read_config",
       "type": "custom",
-      "position": { "x": 50, "y": 350 },
-      "data": { "category": "decision", "label": "Schritt übersprungen", "details": [] }
+      "position": { "x": 405, "y": 380 },
+      "data": {
+        "label": "Parameter einlesen",
+        "details": [
+          "Laden der Pfade für PDF- und Datentransfer.",
+          "Bestimmung des Übertragungsmodus (Netzwerk/MLLP vs. Dateisystem)."
+        ],
+        "category": "process"
+      }
     },
     {
-      "id": "aktion_1",
+      "id": "dec_input_file",
       "type": "custom",
-      "position": { "x": 405, "y": 500 },
-      "data": { "category": "process", "label": "Hauptaktion 1", "details": ["Verarbeitung läuft"] }
+      "position": { "x": 405, "y": 550 },
+      "data": {
+        "label": "Patientendaten zugreifbar?",
+        "details": [
+          "Validierung des übergebenen Dateipfads.",
+          "Prüfung, ob die Quelldaten für den Export bereitstehen."
+        ],
+        "category": "decision"
+      }
     },
     {
-      "id": "fehler_1",
+      "id": "err_input_missing",
       "type": "custom",
-      "position": { "x": 805, "y": 500 },
-      "data": { "category": "error", "label": "Fehler Aktion 1", "details": ["Logik-Fehler erkannt"] }
+      "position": { "x": 805, "y": 550 },
+      "data": {
+        "label": "Fehler: Quelldatei fehlt",
+        "details": [
+          "Log: 'Übergabedatei nicht gefunden'",
+          "Prüfung: Hat das aufrufende System die Datei korrekt abgelegt?"
+        ],
+        "category": "error"
+      }
     },
     {
-      "id": "aktion_2",
+      "id": "proc_load_patient",
       "type": "custom",
-      "position": { "x": 405, "y": 700 },
-      "data": { "category": "process", "label": "Folgeaktion 2", "details": ["Nächster Prozessschritt"] }
+      "position": { "x": 405, "y": 720 },
+      "data": {
+        "label": "Datenaufbereitung",
+        "details": [
+          "Auslesen der Patientenstammdaten (Name, ID).",
+          "Verknüpfung mit den zugehörigen Archivdokumenten."
+        ],
+        "category": "process"
+      }
     },
     {
-      "id": "fehler_zentral",
-      "type": "custom",
-      "position": { "x": 1290, "y": 600 },
-      "data": { "category": "error", "label": "Fehlerbehandlung", "details": ["Sammelpunkt für Abbruch"] }
-    },
-    {
-      "id": "ende",
+      "id": "dec_pid_valid",
       "type": "custom",
       "position": { "x": 405, "y": 900 },
-      "data": { "category": "end", "label": "Modul Ende", "details": ["Beendet"] }
+      "data": {
+        "label": "Patienten-ID gültig?",
+        "details": [
+          "Prüfung auf Vorhandensein einer eindeutigen Identifikationsnummer.",
+          "Ohne ID ist kein Import im Zielsystem möglich."
+        ],
+        "category": "decision"
+      }
+    },
+    {
+      "id": "err_pid_empty",
+      "type": "custom",
+      "position": { "x": 805, "y": 900 },
+      "data": {
+        "label": "Fehler: Identifikation fehlt",
+        "details": [
+          "Log: 'Es wurde eine leere Patientenid übergeben'",
+          "Ursache: Der Datensatz im Quellsystem enthält keine ID."
+        ],
+        "category": "error"
+      }
+    },
+    {
+      "id": "dec_pdf_active",
+      "type": "custom",
+      "position": { "x": 405, "y": 1080 },
+      "data": {
+        "label": "PDF-Export aktiv?",
+        "details": [
+          "Prüfung, ob in der Konfiguration ein PDF-Zielpfad hinterlegt ist."
+        ],
+        "category": "decision"
+      }
+    },
+    {
+      "id": "proc_skip_pdf",
+      "type": "custom",
+      "position": { "x": 45, "y": 1170 },
+      "data": {
+        "label": "PDF-Schritt überspringen",
+        "details": [
+          "Kein Pfad konfiguriert: Es erfolgt eine reine Übermittlung der Textdaten."
+        ],
+        "category": "process"
+      }
+    },
+    {
+      "id": "proc_copy_pdf",
+      "type": "custom",
+      "position": { "x": 405, "y": 1250 },
+      "data": {
+        "label": "PDF-Dokument bereitstellen",
+        "details": [
+          "Kopieren des Dokuments in das definierte Export-Verzeichnis."
+        ],
+        "category": "process"
+      }
+    },
+    {
+      "id": "err_pdf_copy",
+      "type": "custom",
+      "position": { "x": 805, "y": 1244 },
+      "data": {
+        "label": "Fehler: Kopierfehler PDF",
+        "details": [
+          "Log: 'Konnte nicht in Zielverzeichnis kopieren'",
+          "Ursache: Zielordner voll, schreibgeschützt oder Pfad ungültig."
+        ],
+        "category": "error"
+      }
+    },
+    {
+      "id": "dec_socket_mode",
+      "type": "custom",
+      "position": { "x": 405, "y": 1450 },
+      "data": {
+        "label": "Übertragungsweg wählen",
+        "details": [
+          "Entscheidung zwischen direktem Netzwerkversand oder Dateiablage."
+        ],
+        "category": "decision"
+      }
+    },
+    {
+      "id": "proc_send_socket",
+      "type": "custom",
+      "position": { "x": 200, "y": 1600 },
+      "data": {
+        "label": "Netzwerk-Transfer (MLLP)",
+        "details": [
+          "Aufbau einer TCP-Verbindung zum Zielserver.",
+          "Direkte Übertragung der HL7-Daten."
+        ],
+        "category": "process"
+      }
+    },
+    {
+      "id": "err_socket_fail",
+      "type": "custom",
+      "position": { "x": -120, "y": 1845 },
+      "data": {
+        "label": "Fehler: Netzwerkverbindung",
+        "details": [
+          "Log: 'Konnte nicht per Socket senden'",
+          "Ursache: Zielserver nicht erreichbar oder Port durch Firewall blockiert."
+        ],
+        "category": "error"
+      }
+    },
+    {
+      "id": "proc_write_file",
+      "type": "custom",
+      "position": { "x": 610, "y": 1600 },
+      "data": {
+        "label": "HL7-Datei exportieren",
+        "details": [
+          "Erstellen der Exportdatei im Zielverzeichnis.",
+          "Ggf. Erzeugung einer Trigger-Datei (.rdy) für das Zielsystem."
+        ],
+        "category": "process"
+      }
+    },
+    {
+      "id": "err_write_fail",
+      "type": "custom",
+      "position": { "x": 950, "y": 1608 },
+      "data": {
+        "label": "Fehler: Dateiexport",
+        "details": [
+          "Log: 'Konnte nicht in Ziel Verzeichnis kopieren'",
+          "Ursache: Fehlende Berechtigungen im Export-Ordner."
+        ],
+        "category": "error"
+      }
+    },
+    {
+      "id": "proc_cleanup",
+      "type": "custom",
+      "position": { "x": 405, "y": 1850 },
+      "data": {
+        "label": "Bereinigung",
+        "details": [
+          "Löschen der temporären Verarbeitungsdateien.",
+          "Entfernen der Quelldatei nach erfolgreichem Abschluss."
+        ],
+        "category": "process"
+      }
+    },
+    {
+      "id": "end_node",
+      "type": "custom",
+      "position": { "x": 405, "y": 2050 },
+      "data": {
+        "label": "Vorgang beendet",
+        "details": [
+          "Modul erfolgreich beendet.",
+          "Rückgabewert: Success (0)"
+        ],
+        "category": "end"
+      }
+    },
+    {
+      "id": "error_sink",
+      "type": "custom",
+      "position": { "x": 1290, "y": 1000 },
+      "data": {
+        "label": "Zentrale Fehlererfassung",
+        "details": [
+          "Diese Node dient nur der visuellen Unterstützung des Linienverlaufs und hat keine technische Funktion. Beachte das Ziel.",
+          "Sammelt alle kritischen Abbruchfehler."
+        ],
+        "category": "error"
+      }
     }
-  ],
+  ],    
   "edges": [
-    { "id": "e1", "source": "start", "target": "entscheidung_1", "sourceHandle": "bottom-2-source", "targetHandle": "top-2-target", "type": "smoothstep" },
-    { "id": "e2", "source": "entscheidung_1", "target": "gate_aktiv", "sourceHandle": "bottom-2-source", "targetHandle": "top-2-target", "type": "smoothstep" },
-    { "id": "e3", "source": "entscheidung_1", "target": "gate_skip", "sourceHandle": "left-2-source", "targetHandle": "top-2-target", "type": "smoothstep" },
-    { "id": "e4", "source": "gate_aktiv", "target": "aktion_1", "sourceHandle": "bottom-2-source", "targetHandle": "top-2-target", "type": "smoothstep" },
-    { "id": "e5", "source": "aktion_1", "target": "fehler_1", "sourceHandle": "right-2-source", "targetHandle": "left-2-target", "type": "smoothstep" },
-    { "id": "e6", "source": "aktion_1", "target": "aktion_2", "sourceHandle": "bottom-2-source", "targetHandle": "top-2-target", "type": "smoothstep" },
-    { "id": "e7", "source": "gate_skip", "target": "aktion_2", "sourceHandle": "bottom-2-source", "targetHandle": "left-1-target", "type": "smoothstep" },
-    { "id": "e8", "source": "aktion_2", "target": "ende", "sourceHandle": "bottom-2-source", "targetHandle": "top-2-target", "type": "smoothstep" },
-    { "id": "e9", "source": "fehler_1", "target": "fehler_zentral", "sourceHandle": "right-2-source", "targetHandle": "top-1-target", "type": "smoothstep" },
-    { "id": "e10", "source": "fehler_zentral", "target": "ende", "sourceHandle": "bottom-2-source", "targetHandle": "right-2-target", "type": "smoothstep" }
+    {
+      "id": "e_start_chk",
+      "source": "start_node",
+      "target": "dec_config_exists",
+      "sourceHandle": "bottom-2-source",
+      "targetHandle": "top-2-target",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e_start_fail",
+      "source": "start_node",
+      "target": "err_no_args",
+      "sourceHandle": "right-2-source",
+      "targetHandle": "left-2-target",
+      "type": "smoothstep",
+      "label": "No Parameters"
+    },
+    {
+      "id": "e_conf_fail",
+      "source": "dec_config_exists",
+      "target": "err_config_missing",
+      "sourceHandle": "right-2-source",
+      "targetHandle": "left-2-target",
+      "type": "smoothstep",
+      "label": "Not Found"
+    },
+    {
+      "id": "e_conf_ok",
+      "source": "dec_config_exists",
+      "target": "proc_read_config",
+      "sourceHandle": "bottom-2-source",
+      "targetHandle": "top-2-target",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e_read_to_chk",
+      "source": "proc_read_config",
+      "target": "dec_input_file",
+      "sourceHandle": "bottom-2-source",
+      "targetHandle": "top-2-target",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e_input_fail",
+      "source": "dec_input_file",
+      "target": "err_input_missing",
+      "sourceHandle": "right-2-source",
+      "targetHandle": "left-2-target",
+      "type": "smoothstep",
+      "label": "File Missing"
+    },
+    {
+      "id": "e_input_ok",
+      "source": "dec_input_file",
+      "target": "proc_load_patient",
+      "sourceHandle": "bottom-2-source",
+      "targetHandle": "top-2-target",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e_load_to_pid",
+      "source": "proc_load_patient",
+      "target": "dec_pid_valid",
+      "sourceHandle": "bottom-2-source",
+      "targetHandle": "top-2-target",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e_pid_fail",
+      "source": "dec_pid_valid",
+      "target": "err_pid_empty",
+      "sourceHandle": "right-2-source",
+      "targetHandle": "left-2-target",
+      "type": "smoothstep",
+      "label": "PID Empty"
+    },
+    {
+      "id": "e_pid_ok",
+      "source": "dec_pid_valid",
+      "target": "dec_pdf_active",
+      "sourceHandle": "bottom-2-source",
+      "targetHandle": "top-2-target",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e_pdf_skip",
+      "source": "dec_pdf_active",
+      "target": "proc_skip_pdf",
+      "sourceHandle": "left-2-source",
+      "targetHandle": "top-2-target",
+      "type": "smoothstep",
+      "label": "Disabled"
+    },
+    {
+      "id": "e_pdf_do",
+      "source": "dec_pdf_active",
+      "target": "proc_copy_pdf",
+      "sourceHandle": "bottom-2-source",
+      "targetHandle": "top-2-target",
+      "type": "smoothstep",
+      "label": "Enabled"
+    },
+    {
+      "id": "e_pdf_fail_lnk",
+      "source": "proc_copy_pdf",
+      "target": "err_pdf_copy",
+      "sourceHandle": "right-2-source",
+      "targetHandle": "left-2-target",
+      "type": "smoothstep",
+      "label": "Copy Error"
+    },
+    {
+      "id": "e_pdf_ok_join",
+      "source": "proc_copy_pdf",
+      "target": "dec_socket_mode",
+      "sourceHandle": "bottom-2-source",
+      "targetHandle": "top-2-target",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e_pdf_skip_join",
+      "source": "proc_skip_pdf",
+      "target": "dec_socket_mode",
+      "sourceHandle": "bottom-2-source",
+      "targetHandle": "left-1-target",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e_mode_socket",
+      "source": "dec_socket_mode",
+      "target": "proc_send_socket",
+      "sourceHandle": "left-2-source",
+      "targetHandle": "top-2-target",
+      "type": "smoothstep",
+      "label": "Network"
+    },
+    {
+      "id": "e_mode_file",
+      "source": "dec_socket_mode",
+      "target": "proc_write_file",
+      "sourceHandle": "right-2-source",
+      "targetHandle": "top-2-target",
+      "type": "smoothstep",
+      "label": "File System"
+    },
+    {
+      "id": "e_sock_fail",
+      "source": "proc_send_socket",
+      "target": "err_socket_fail",
+      "sourceHandle": "left-2-source",
+      "targetHandle": "top-2-target",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e_file_fail",
+      "source": "proc_write_file",
+      "target": "err_write_fail",
+      "sourceHandle": "right-2-source",
+      "targetHandle": "left-2-target",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e_sock_ok",
+      "source": "proc_send_socket",
+      "target": "proc_cleanup",
+      "sourceHandle": "bottom-2-source",
+      "targetHandle": "left-1-target",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e_file_ok",
+      "source": "proc_write_file",
+      "target": "proc_cleanup",
+      "sourceHandle": "bottom-2-source",
+      "targetHandle": "right-1-target",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e_clean_end",
+      "source": "proc_cleanup",
+      "target": "end_node",
+      "sourceHandle": "bottom-2-source",
+      "targetHandle": "top-2-target",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e_sink_1",
+      "source": "err_no_args",
+      "target": "error_sink",
+      "sourceHandle": "right-2-source",
+      "targetHandle": "left-1-target",
+      "type": "default"
+    },
+    {
+      "id": "e_sink_2",
+      "source": "err_config_missing",
+      "target": "error_sink",
+      "sourceHandle": "right-2-source",
+      "targetHandle": "left-1-target",
+      "type": "default"
+    },
+    {
+      "id": "e_sink_3",
+      "source": "err_input_missing",
+      "target": "error_sink",
+      "sourceHandle": "right-2-source",
+      "targetHandle": "left-2-target",
+      "type": "default"
+    },
+    {
+      "id": "e_sink_4",
+      "source": "err_pid_empty",
+      "target": "error_sink",
+      "sourceHandle": "right-2-source",
+      "targetHandle": "left-2-target",
+      "type": "default"
+    },
+    {
+      "id": "e_sink_5",
+      "source": "err_pdf_copy",
+      "target": "error_sink",
+      "sourceHandle": "right-2-source",
+      "targetHandle": "left-3-target",
+      "type": "default"
+    },
+    {
+      "id": "e_sink_6",
+      "source": "err_write_fail",
+      "target": "error_sink",
+      "sourceHandle": "right-2-source",
+      "targetHandle": "left-3-target",
+      "type": "default"
+    },
+    {
+      "id": "e_sink_finalize",
+      "source": "error_sink",
+      "target": "end_node",
+      "sourceHandle": "bottom-2-source",
+      "targetHandle": "right-2-target",
+      "type": "smoothstep"
+    },
+    {
+      "id": "e_socket_fail_to_end_node",
+      "source": "err_socket_fail",
+      "target": "end_node",
+      "sourceHandle": "bottom-2-source",
+      "targetHandle": "left-2-target",
+      "type": "smoothstep"
+    }
   ]
 }
 

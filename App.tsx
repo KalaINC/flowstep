@@ -541,7 +541,7 @@ const buildExportHtml = (data: any, themeColor: string) => {
                           rows: 4,
                           className: 'w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all resize-none pr-8',
                           style: { '--tw-ring-color': THEME_COLOR },
-                          placeholder: 'Paste a log line here to highlight the path\u2026'
+                          placeholder: 'Füge eine Logzeile ein, um den Pfad zu markieren…'
                         }),
                         logSearchText.length > 0 && (
                           React.createElement('button', {
@@ -562,15 +562,15 @@ const buildExportHtml = (data: any, themeColor: string) => {
                             React.createElement('span', { className: 'font-bold' }, 'Match found: '),
                             React.createElement('span', { className: 'italic' }, logMatchedNodeLabel),
                             React.createElement('p', { className: 'mt-1 text-[10px] opacity-75' },
-                              logHighlightedNodeIds.size + ' nodes and ' + logHighlightedEdgeIds.size + ' edges highlighted on the path.'
+                              logHighlightedNodeIds.size + ' Knoten und ' + logHighlightedEdgeIds.size + ' Kanten im Pfad hervorgehoben.'
                             )
                           )
-                        ) : 'No matching node found for this log text.'
+                        ) : 'Kein passender Knoten für diese Logzeile gefunden.'
                       )
                     ),
                     React.createElement('div', { className: 'p-4 bg-slate-50 border border-slate-100 rounded-2xl' },
                       React.createElement('p', { className: 'text-[11px] text-slate-500 leading-relaxed font-medium' },
-                        'Paste a log message from support \u2014 the path from start to the matching node will be highlighted.'
+                        'Füge eine Logzeile aus dem Support ein — der Pfad vom Start bis zum passenden Knoten wird hervorgehoben.'
                       )
                     )
                   )
@@ -1764,7 +1764,7 @@ const AppContent = () => {
                     rows={4}
                     className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all resize-none pr-8"
                     style={{ '--tw-ring-color': themeColor } as any}
-                    placeholder="Paste a log line here to highlight the path…"
+                    placeholder="Füge eine Logzeile ein, um den Pfad zu markieren..."
                   />
                   {logSearchText.length > 0 && (
                     <button
@@ -1788,18 +1788,18 @@ const AppContent = () => {
                       <span className="font-bold">Match found:</span>{' '}
                       <span className="italic">{logMatchedNodeLabel}</span>
                       <p className="mt-1 text-[10px] opacity-75">
-                        {logHighlightedNodeIds.size} nodes and {logHighlightedEdgeIds.size} edges highlighted on the path.
+                        {logHighlightedNodeIds.size} Knoten und {logHighlightedEdgeIds.size} Kanten im Pfad hervorgehoben.
                       </p>
                     </>
                   ) : (
-                    <span>No matching node found for this log text.</span>
+                    <span>Kein passender Knoten für diese Logzeile gefunden.</span>
                   )}
                 </div>
               )}
 
               <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
                 <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
-                  Paste a log message from support — the path from start to the matching node will be highlighted in amber.
+                  Füge eine Logzeile aus dem Support ein — der Pfad vom Start bis zum passenden Knoten wird hervorgehoben.
                 </p>
               </div>
             </div>
